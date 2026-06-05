@@ -1,15 +1,16 @@
 # url_shortener
 
 ## how to run
+run with autoreload
+```
+cp env-example .env
+make air
+```
+
+run as docker service
 ```
 cp env-example .env
 make up
-```
-
-or
-```
-cp env-example .env
-go tool air
 ```
 
 ## docs

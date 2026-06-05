@@ -25,8 +25,20 @@ func NewDB(path string) (*sql.DB, error) {
 	db.SetMaxIdleConns(8)
 	db.SetConnMaxLifetime(30 * time.Minute)
 
+	sql := `
+	PRAGMA busy_timeout=10000;
+	PRAGMA foreign_keys=ON;
+	PRAGMA journal_mode=WAL;
+	PRAGMA synchronous = NORMAL;
+	PRAGMA auto_vacuum = INCREMENTAL;
+	PRAGMA journal_size_limit = 67110000;
+	PRAGMA temp_store = MEMORY;
+	PRAGMA cache_size = -65536;
+	PRAGMA page_size = 4096;
+	`
+
 	// WAL mode — concurrent reads without blocking writes
-	if _, err := db.Exec("PRAGMA journal_mode=WAL"); err != nil {
+	if _, err := db.Exec(sql); err != nil {
 		return nil, fmt.Errorf("enable WAL: %w", err)
 	}
 
