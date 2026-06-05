@@ -14,4 +14,5 @@ build:
 
 .PHONY: build-bin
 build-bin:
+	@go mod download
 	@go tool templ generate && go build -ldflags="-s -w" -o bin/http cmd/http/main.go
