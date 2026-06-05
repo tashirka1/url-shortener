@@ -1,0 +1,7 @@
+tmp
+*.db
+*.db-shm
+*.db-wal
+*_templ.go
+.env
+bin/*

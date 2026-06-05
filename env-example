@@ -1,0 +1,5 @@
+GOOSE_DRIVER="sqlite3"
+GOOSE_DBSTRING="./db/main.db"
+GOOSE_MIGRATION_DIR="./migrations"
+SESSION_KEY=dev_key
+DB_NAME=db/main.db

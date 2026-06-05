@@ -1,0 +1,87 @@
+package view
+
+import (
+	"fmt"
+	"url_shortener/internal/core/view"
+	"url_shortener/internal/link/model"
+)
+
+templ CreateLinkError(err string) {
+	<div>{ err }</div>
+}
+
+templ CreateLink(userId int, links []model.Link) {
+	@view.Base("URL Shortener", userId) {
+		// <div hx-get="/link/create-link" hx-trigger="every 5s" hx-swap="none"></div>
+		<div class="grid">
+			<article>
+				<form hx-post="/link/create-link" hx-target="#list-links" hx-swap="afterbegin" hx-on::after-request="this.setAttribute('hx-target', '#list-links'); document.getElementById('create-link-errors').innerHTML = ''; if(event.detail.successful) this.reset()" hx-on::error="this.setAttribute('hx-target', '#create-link-errors'); this.setAttribute('hx-swap', 'innerHTML')">
+					<fieldset role="group">
+						<input type="text" name="url" placeholder="URL" aria-label="URL" required/>
+						<button>Create</button>
+					</fieldset>
+				</form>
+				<div id="create-link-errors" style="margin-top:5px;color: red"></div>
+			</article>
+			<article style="overflow-y: auto;" id="links" hx-swap-oob="true">
+				<table>
+					<thead>
+						<tr>
+							<th scope="col">Code</th>
+							<th scope="col">URL</th>
+							<th scope="col">Clicks</th>
+							<th scope="col">Delete</th>
+						</tr>
+					</thead>
+					<tbody id="list-links">
+						@ListLink(links)
+					</tbody>
+				</table>
+			</article>
+		</div>
+	}
+}
+
+templ Link(link model.Link) {
+	<tr>
+		<td scope="row">
+			<a href={ templ.URL(fmt.Sprintf("/r/%s", link.Code)) } target="_blank">{ link.Code }</a>
+		</td>
+		<td>
+			<a href={ templ.URL(link.Url) } target="_blank">{ link.Url }</a>
+		</td>
+		<td>{ fmt.Sprintf("%d", link.Clicks) }</td>
+		<td>
+			<button hx-delete={ string(templ.URL(fmt.Sprintf("/link/remove-link/%s", link.Code))) } hx-target="closest tr" hx-swap="innerHTML">
+				Delete
+			</button>
+		</td>
+	</tr>
+}
+
+templ LastLink(link model.Link) {
+	<tr hx-get={ string(templ.URL(fmt.Sprintf("/link/list-link?cursor=%d", link.Id))) } hx-trigger="revealed" hx-swap="afterend">
+		<td scope="row">
+			<a href={ templ.URL(fmt.Sprintf("/r/%s", link.Code)) } target="_blank">{ link.Code }</a>
+		</td>
+		<td>
+			<a href={ templ.URL(link.Url) } target="_blank">{ link.Url }</a>
+		</td>
+		<td>{ fmt.Sprintf("%d", link.Clicks) }</td>
+		<td>
+			<button hx-delete={ string(templ.URL(fmt.Sprintf("/link/remove-link/%s", link.Code))) } hx-target="closest tr" hx-swap="innerHTML">
+				Delete
+			</button>
+		</td>
+	</tr>
+}
+
+templ ListLink(links []model.Link) {
+	for _, link:= range links {
+		if link.Id == links[len(links)-1].Id {
+			@LastLink(link)
+		} else {
+			@Link(link)
+		}
+	}
+}

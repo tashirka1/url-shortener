@@ -1,0 +1,13 @@
+package view
+
+import "url_shortener/internal/core/view"
+
+templ Main() {
+	@view.Base("URL Shortener", 0) {
+		<div>
+			<h1>Start here</h1>
+			<a href="/auth/register">Register</a>
+			<a href="/auth/login">Login</a>
+		</div>
+	}
+}
