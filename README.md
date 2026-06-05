@@ -8,7 +8,8 @@ make up
 
 or
 ```
-air
+cp env-example .env
+go tool air
 ```
 
 ## docs
@@ -39,6 +40,6 @@ go build -trimpath -ldflags="-s -w" -o bin/http cmd/http/main.go
 ## testing
 ```
 go test -v
-go test -v -coverprofile cover.out
+go test -v -coverprofile cover.out ./...
 go tool cover -html=cover.out
 ```
