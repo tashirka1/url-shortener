@@ -24,6 +24,7 @@ func NewDB(path string) (*sql.DB, error) {
 	db.SetMaxOpenConns(8)
 	db.SetMaxIdleConns(8)
 	db.SetConnMaxLifetime(30 * time.Minute)
+	db.SetConnMaxIdleTime(15 * time.Minute)
 
 	sql := `
 	PRAGMA busy_timeout=10000;
