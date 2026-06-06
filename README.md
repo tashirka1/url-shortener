@@ -26,6 +26,7 @@ redirect url
 ## wrk
 ```
 wrk -c 100 -t 10 -d 10 --latency http://localhost:8000/link/create-link
+wrk2 -c 100 -d 10 -t 10 --latency --rate 500 https://url.tashirka.ru/link/create-link
 ```
 
 ## escape analysis
