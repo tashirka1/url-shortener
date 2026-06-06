@@ -27,5 +27,3 @@ services:
       timeout: 10s
       retries: 5
       start_period: 15s
-    depends_on:
-      - litestream
