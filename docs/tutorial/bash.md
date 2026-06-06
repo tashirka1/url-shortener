@@ -23,7 +23,7 @@ build-bin:
 ## Dev-сервер с hot-reload
 
 ```bash
-go tool air                 # через .air.toml
+make air                 # через .air.toml
 ```
 
 `.air.toml` следит за `.go`, `.templ`, `.html`, `.tpl`, `.tmpl`, игнорирует `*_templ.go` и `*_test.go`. При изменении — `templ generate` + `go build` + перезапуск.

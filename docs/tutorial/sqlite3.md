@@ -75,8 +75,8 @@ CREATE TABLE link_link(
 );
 
 -- +goose Down
-DROP TABLE IF EXISTS link_link;
-DROP TABLE IF EXISTS auth_user;
+DROP TABLE link_link;
+DROP TABLE auth_user;
 ```
 
 ## Параметризованные запросы
