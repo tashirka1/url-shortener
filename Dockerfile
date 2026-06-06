@@ -1,9 +1,10 @@
 FROM golang:1.26-bookworm AS builder
 WORKDIR /app
+RUN go install github.com/a-h/templ/cmd/templ@latest
 COPY go.mod go.sum ./
 RUN go mod download
 COPY --chown=65532:65532 . /app
-RUN go tool templ generate
+RUN templ generate
 RUN CGO_ENABLED=0 GOOS=linux go build -o bin/http cmd/http/main.go
 
 FROM debian:bookworm-slim AS run
