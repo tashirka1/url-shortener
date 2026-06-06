@@ -11,7 +11,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 COPY --from=templ /app /app
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
-    CGO_ENABLED=0 GOOS=linux go build -o bin/http cmd/http/main.go
+    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o bin/http cmd/http/main.go
 
 FROM alpine:3.23 AS run
 WORKDIR /app
