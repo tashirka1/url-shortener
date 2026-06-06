@@ -58,6 +58,10 @@ sudo dd if=/dev/zero of=/swapfile bs=1M count=2048
 sudo chmod 0600 /swapfile
 sudo mkswap /swapfile
 sudo swapon /swapfile
+
+sudo nano /etc/fstab # add "/swapfile none swap sw 0 0"
+sudo swapon --all
+sudo swapon --show
 ```
 
 ### swappiness
