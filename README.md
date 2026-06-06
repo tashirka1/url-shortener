@@ -45,3 +45,9 @@ go test -v
 go test -v -coverprofile cover.out ./...
 go tool cover -html=cover.out
 ```
+
+# litestream
+```
+litestream replicate -config ./litestream.yml
+litestream restore -o db/main.db s3://url-shortener.localhost:9000/main.db
+```
