@@ -48,6 +48,6 @@ go tool cover -html=cover.out
 
 # litestream
 ```
-litestream replicate -config ./litestream.yml
-litestream restore -o db/main.db s3://url-shortener.localhost:9000/main.db
+litestream replicate -config ./litestream_replicate.yml
+litestream restore -config ./litestream_restore.yml ./main.db
 ```

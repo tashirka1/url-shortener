@@ -1,0 +1,11 @@
+access-key-id: ${LITESTREAM_ACCESS_KEY_ID}
+secret-access-key: ${LITESTREAM_SECRET_ACCESS_KEY}
+region: us-east-1
+endpoint: ${LITESTREAM_ENDPOINT}
+
+dbs:
+  - path: ./main.db
+    replicas:
+      - type: s3
+        bucket: 5e8ff288febf-sqlite-backups
+        path: url-shortener
