@@ -6,16 +6,6 @@ x-logging-template: &default-logging
       max-file: "3"
 
 services:
-  litestream:
-    image: litestream/litestream:0.5.9
-    <<: *default-logging
-    restart: always
-    volumes:
-      - "./litestream.yml:/etc/litestream.yml"
-      - "./db:/db:rw"
-    env_file: .env
-    command: replicate
-
   app:
     build:
       dockerfile: ./Dockerfile
