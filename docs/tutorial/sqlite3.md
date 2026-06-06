@@ -405,3 +405,89 @@ func Float32SliceToBytes(vec []float32) []byte {
     return b
 }
 ```
+
+## Batch INSERT / UPSERT
+
+Группировка вставок в одну транзакцию — в 10–100× быстрее, чем по одному:
+
+```sql
+BEGIN TRANSACTION;
+INSERT INTO link_link(code, url, clicks, user_id) VALUES ('a', 'https://a.com', 0, 1);
+INSERT INTO link_link(code, url, clicks, user_id) VALUES ('b', 'https://b.com', 0, 1);
+INSERT INTO link_link(code, url, clicks, user_id) VALUES ('c', 'https://c.com', 0, 1);
+COMMIT;
+```
+
+В Go:
+
+```go
+tx, _ := db.BeginTx(ctx, nil)
+for _, link := range links {
+    tx.ExecContext(ctx, "INSERT INTO link_link(code, url, clicks, user_id) VALUES (?, ?, 0, ?)",
+        link.Code, link.Url, link.UserId)
+}
+tx.Commit()
+```
+
+UPSERT — INSERT или UPDATE, если запись уже существует:
+
+```sql
+INSERT INTO link_link(code, url, clicks, user_id) VALUES ('abc', 'https://new.com', 0, 1)
+ON CONFLICT(code) DO UPDATE SET url = excluded.url, clicks = excluded.clicks;
+```
+
+`excluded` — псевдоним для предлагаемых значений (то, что в VALUES).
+
+## Модель блокировок
+
+SQLite имеет 5 состояний блокировки (строгая иерархия, повышение только вперёд):
+
+```
+UNLOCKED → SHARED → RESERVED → PENDING → EXCLUSIVE
+```
+
+| Состояние | Кто может читать | Кто может писать |
+|-----------|-----------------|------------------|
+| `UNLOCKED` | никто | никто |
+| `SHARED` | несколько читателей | никто |
+| `RESERVED` | читатели есть | готовится запись (пишет в кеш) |
+| `PENDING` | существующие читатели не прерываются | новые читатели не пускаются |
+| `EXCLUSIVE` | никто | один писатель |
+
+В WAL mode читатели не блокируют писателей: пишут в WAL-файл, читатели продолжают читать из БД. Конфликт возникает только при checkpoint (переход `EXCLUSIVE`).
+
+**Ошибки при блокировках:**
+- `SQLITE_BUSY` — файл заблокирован другим процессом. Решение: `busy_timeout`.
+- `SQLITE_LOCKED` — два запроса на одном соединении. Решение: не переиспользовать `*sql.Rows` при записи.
+
+**Рекомендации:**
+- `busy_timeout=10000` — ждать до 10 с вместо `BUSY`
+- Явные транзакции держать короткими
+- Не делать операции, требующие `EXCLUSIVE` (DDL, `VACUUM`), под нагрузкой
+
+## Мониторинг
+
+Размер БД и состояние через PRAGMA:
+
+```sql
+PRAGMA page_count;          -- всего страниц
+PRAGMA page_size;           -- размер страницы (байт)
+PRAGMA freelist_count;      -- свободные страницы (фрагментация)
+PRAGMA wal_checkpoint;      -- размер WAL и статус checkpoint
+```
+
+Размер данных: `page_count * page_size`
+Фрагментация: `freelist_count * 100.0 / page_count` — если > 20%, пора `VACUUM`.
+
+В Go:
+
+```go
+var pageCount, pageSize, freelistCount int64
+db.QueryRowContext(ctx, "PRAGMA page_count").Scan(&pageCount)
+db.QueryRowContext(ctx, "PRAGMA page_size").Scan(&pageSize)
+db.QueryRowContext(ctx, "PRAGMA freelist_count").Scan(&freelistCount)
+
+dbSize := pageCount * pageSize      // байт
+fragPct := float64(freelistCount) / float64(pageCount) * 100
+log.Printf("db: %d MB, frag: %.1f%%", dbSize>>20, fragPct)
+```
