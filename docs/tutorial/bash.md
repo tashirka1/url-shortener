@@ -1,84 +1,123 @@
-# Bash: команды проекта
+# Bash: шпаргалка
 
-## Сборка и запуск
-
-```bash
-make run                    # templ generate + go build → ./bin/http
-```
-
-Makefile:
-
-```makefile
-run: build
-    ./bin/http
-
-build:
-    go tool templ generate
-    go build -o bin/http ./cmd/http
-
-build-bin:
-    go build -o bin/http ./cmd/http
-```
-
-## Dev-сервер с hot-reload
+## Навигация
 
 ```bash
-make air                 # через .air.toml
+pwd                  # текущая директория
+cd <dir>             # перейти в директорию
+cd ..                # на уровень выше
+cd ~                 # домой
+ls -lah              # список файлов (все, подробно, читаемые размеры)
 ```
 
-`.air.toml` следит за `.go`, `.templ`, `.html`, `.tpl`, `.tmpl`, игнорирует `*_templ.go` и `*_test.go`. При изменении — `templ generate` + `go build` + перезапуск.
+## Работа с файлами
+
+```bash
+mkdir -p <dir>       # создать директорию (с родителями)
+touch <file>         # создать пустой файл или обновить время
+cp <src> <dst>       # копировать
+mv <src> <dst>       # переместить/переименовать
+rm -rf <path>        # удалить рекурсивно (осторожно!)
+cat <file>           # вывести содержимое
+less <file>          # просмотр с прокруткой
+head -n 5 <file>     # первые 5 строк
+tail -f <file>       # хвост файла + следить за изменениями
+nano <file>          # редактировать файл
+chmod +x <file>      # сделать исполняемым
+```
+
+## Диски и память
+
+```bash
+df -h                # свободное место на разделах
+du -sh <dir>         # размер директории суммарно
+```
+
+## Процессы
+
+```bash
+htop                 # мониторинг процессов (интерактивно)
+ps aux               # список всех процессов
+kill <pid>           # завершить процесс
+kill -9 <pid>        # принудительно
+journalctl -u <service> -f  # логи systemd (хвост)
+```
+
+## Установка пакетов (Debian/Ubuntu)
+
+```bash
+sudo apt update          # обновить список пакетов
+sudo apt install <pkg>   # установить пакет
+```
+
+## Сеть
+
+```bash
+curl <url>           # HTTP-запрос
+curl -X POST -d '{}' <url>  # POST с телом
+wget <url>           # скачать файл
+ping <host>          # проверить доступность
+dig <domain>         # DNS-запрос
+```
+
+## SSH
+
+```bash
+ssh user@host        # подключиться по SSH
+ssh-copy-id user@host   # скопировать свой ключ на сервер
+scp file user@host:path  # копировать файл на сервер
+scp user@host:path/file .  # скачать файл с сервера
+```
+
+## Поиск
+
+```bash
+find <dir> -name "*.go"   # найти файлы по имени
+grep -r "text" .          # искать текст в файлах
+which <cmd>               # путь к исполняемому файлу
+```
+
+## Git
+
+```bash
+git status           # состояние рабочей директории
+git add <file>       # добавить в индекс
+git commit -m "msg"  # создать коммит
+git pull             # стянуть изменения
+git push             # отправить изменения
+git reset <file>     # убрать файл из индекса
+git reset --hard     # откатить все локальные изменения (осторожно)
+git tag <name>       # создать тег
+git tag -d <name>    # удалить тег локально
+git push --tags      # отправить теги в remote
+git log --oneline --graph --all  # история коммитов (граф)
+git diff             # незакоммиченные изменения
+git branch           # список веток
+git checkout -b <branch>  # создать и переключиться на ветку
+git merge <branch>   # слить ветку в текущую
+git stash            # спрятать изменения
+git stash pop        # достать из стеша
+git rebase <branch>  # перебазировать на ветку
+```
+
+## Архивы
+
+```bash
+tar -czf archive.tar.gz <dir>   # упаковать
+tar -xzf archive.tar.gz         # распаковать
+zip -r archive.zip <dir>        # упаковать в zip
+unzip archive.zip               # распаковать zip
+```
 
 ## Docker
 
 ```bash
-make build                  # docker compose build
-make up                     # docker compose up -d  (порт 8001)
-make down                   # docker compose down
-```
-
-## Работа с модулями
-
-```bash
-go mod tidy                 # подчистить зависимости
-go mod vendor               # создать vendor/
-```
-
-## templ
-
-```bash
-go tool templ generate      # сгенерировать *_templ.go из .templ
-go tool templ fmt           # отформатировать .templ файлы
-```
-
-## Тесты
-
-```bash
-go test ./internal/...               # все тесты
-go test -v ./internal/auth/handler/  # verbose, конкретный пакет
-go test -run TestUserService ./internal/auth/service/  # фильтр по имени
-```
-
-## Переменные окружения
-
-Файл `.env`:
-
-```
-SESSION_KEY=dev_key
-DB_NAME=db/main.db
-```
-
-Загружаются через `godotenv` в `main.go`, все обязательны.
-
-## Структура проекта
-
-```
-cmd/http/main.go        — точка входа
-cmd/worker/main.go      — заглушка
-internal/
-  core/                 — БД, сессии, base62, общие view
-  auth/                 — аутентификация (handler→service→storage)
-  link/                 — ссылки (handler→service→storage)
-static/                 — PicoCSS, HTMX, main.js
-migrations/             — SQL-миграции goose
-db/main.db              — SQLite (WAL mode)
+docker ps                   # запущенные контейнеры
+docker ps -a                # все контейнеры
+docker image ls             # список образов
+docker system prune -a      # отчистить всё (образы, контейнеры, кеш)
+docker logs -f <container>  # логи контейнера (хвост)
+docker exec -it <container> <cmd>  # выполнить команду внутри
+docker compose up -d        # запустить compose-проект
+docker compose down         # остановить compose-проект
 ```
