@@ -1,8 +1,8 @@
 access-key-id: ${LITESTREAM_ACCESS_KEY_ID}
 secret-access-key: ${LITESTREAM_SECRET_ACCESS_KEY}
-region: us-east-1
-endpoint: https://s3.ru1.storage.beget.cloud
-sync-interval: 10s
+region: ${AWS_REGION}
+endpoint: ${LITESTREAM_ENDPOINT}
+sync-interval: 1s
 
 dbs:
   - path: /db/main.db

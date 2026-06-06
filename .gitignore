@@ -1,7 +1,5 @@
 tmp
-*.db
-*.db-shm
-*.db-wal
+db/*
 *_templ.go
 .env
 bin/*
