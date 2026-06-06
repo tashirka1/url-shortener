@@ -1,11 +1,14 @@
+FROM ghcr.io/a-h/templ:latest AS templ
+COPY --chown=65532:65532 . /app
+WORKDIR /app
+RUN ["templ", "generate"]
+
 FROM golang:1.26-alpine AS builder
 WORKDIR /app
-RUN go install github.com/a-h/templ/cmd/templ@latest
 COPY go.mod go.sum ./
 RUN --mount=type=cache,target=/go/pkg/mod \
     go mod download
-COPY --chown=65532:65532 . /app
-RUN templ generate
+COPY --from=templ /app /app
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
     CGO_ENABLED=0 GOOS=linux go build -o bin/http cmd/http/main.go
