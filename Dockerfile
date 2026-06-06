@@ -1,4 +1,4 @@
-FROM golang:1.26-bookworm AS builder
+FROM golang:1.26-alpine AS builder
 WORKDIR /app
 RUN go install github.com/a-h/templ/cmd/templ@latest
 COPY go.mod go.sum ./
@@ -10,7 +10,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
     CGO_ENABLED=0 GOOS=linux go build -o bin/http cmd/http/main.go
 
-FROM debian:bookworm-slim AS run
+FROM debian:alpine AS run
 WORKDIR /app
 COPY --from=builder /app/bin/http /app/bin/http
 COPY --from=builder /app/static /app/static
