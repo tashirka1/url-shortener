@@ -10,7 +10,7 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
     CGO_ENABLED=0 GOOS=linux go build -o bin/http cmd/http/main.go
 
-FROM debian:alpine AS run
+FROM alpine:3.23 AS run
 WORKDIR /app
 COPY --from=builder /app/bin/http /app/bin/http
 COPY --from=builder /app/static /app/static
