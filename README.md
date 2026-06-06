@@ -14,7 +14,7 @@ make up
 ```
 
 ## docs
-[open docs](/docs)
+[tutorial](/docs/tutorial)
 
 ## use cases
 register user
