@@ -4,3 +4,4 @@ compose.yml
 Dockerfile
 .air.toml
 tmp
+*_templ.go
