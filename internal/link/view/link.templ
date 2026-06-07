@@ -13,31 +13,33 @@ templ CreateLinkError(err string) {
 templ CreateLink(userId int, links []model.Link) {
 	@view.Base("URL Shortener", userId) {
 		// <div hx-get="/link/create-link" hx-trigger="every 5s" hx-swap="none"></div>
-		<div class="grid">
-			<article>
-				<form hx-post="/link/create-link" hx-target="#list-links" hx-swap="afterbegin" hx-on::after-request="this.setAttribute('hx-target', '#list-links'); document.getElementById('create-link-errors').innerHTML = ''; if(event.detail.successful) this.reset()" hx-on::error="this.setAttribute('hx-target', '#create-link-errors'); this.setAttribute('hx-swap', 'innerHTML')">
-					<fieldset role="group">
-						<input type="text" name="url" placeholder="URL" aria-label="URL" required/>
-						<button>Create</button>
-					</fieldset>
-				</form>
-				<div id="create-link-errors" style="margin-top:5px;color: red"></div>
-			</article>
-			<article style="overflow-y: auto;" id="links" hx-swap-oob="true">
-				<table>
-					<thead>
-						<tr>
-							<th scope="col">Short link</th>
-							<th scope="col">URL</th>
-							<th scope="col">Clicks</th>
-							<th scope="col">Delete</th>
-						</tr>
-					</thead>
-					<tbody id="list-links">
-						@ListLink(links)
-					</tbody>
-				</table>
-			</article>
+		<div>
+			<div style="margin: auto; ">
+				<div style="width: fit-content;">
+					<form hx-post="/link/create-link" hx-target="#list-links" hx-swap="afterbegin" hx-on::after-request="this.setAttribute('hx-target', '#list-links'); document.getElementById('create-link-errors').innerHTML = ''; if(event.detail.successful) this.reset()" hx-on::error="this.setAttribute('hx-target', '#create-link-errors'); this.setAttribute('hx-swap', 'innerHTML')">
+						<fieldset role="group">
+							<input type="text" name="url" placeholder="URL" aria-label="URL" required/>
+							<button>Create</button>
+						</fieldset>
+					</form>
+					<div id="create-link-errors" style="margin-top:5px;color: red"></div>
+				</div>
+				<article id="links">
+					<table>
+						<thead>
+							<tr>
+								<th scope="col">Short link</th>
+								<th scope="col">URL</th>
+								<th scope="col">Clicks</th>
+								<th scope="col">Delete</th>
+							</tr>
+						</thead>
+						<tbody id="list-links">
+							@ListLink(links)
+						</tbody>
+					</table>
+				</article>
+			</div>
 		</div>
 	}
 }
