@@ -130,6 +130,6 @@ func SetupHandlers(e *echo.Echo, db *sql.DB, sessionStore *sessions.CookieStore)
 	group.POST("/create-link", handler.PostCreateLink)
 	group.GET("/list-link", handler.ListLink)
 	group.DELETE("/remove-link/:code", handler.RemoveLink)
-	e.GET("/r/:code", handler.RedirectLink)
+	e.GET("/:code", handler.RedirectLink)
 	e.GET("/", handler.Main)
 }

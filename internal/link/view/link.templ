@@ -27,7 +27,7 @@ templ CreateLink(userId int, links []model.Link) {
 				<table>
 					<thead>
 						<tr>
-							<th scope="col">Code</th>
+							<th scope="col">Short link</th>
 							<th scope="col">URL</th>
 							<th scope="col">Clicks</th>
 							<th scope="col">Delete</th>
@@ -45,7 +45,7 @@ templ CreateLink(userId int, links []model.Link) {
 templ Link(link model.Link) {
 	<tr>
 		<td scope="row">
-			<a href={ templ.URL(fmt.Sprintf("/r/%s", link.Code)) } target="_blank">{ link.Code }</a>
+			<a href={ templ.URL(fmt.Sprintf("/%s", link.Code)) } class="shortLink" target="_blank">{ link.Code }</a>
 		</td>
 		<td>
 			<a href={ templ.URL(link.Url) } target="_blank">{ link.Url }</a>
@@ -62,7 +62,7 @@ templ Link(link model.Link) {
 templ LastLink(link model.Link) {
 	<tr hx-get={ string(templ.URL(fmt.Sprintf("/link/list-link?cursor=%d", link.Id))) } hx-trigger="revealed" hx-swap="afterend">
 		<td scope="row">
-			<a href={ templ.URL(fmt.Sprintf("/r/%s", link.Code)) } target="_blank">{ link.Code }</a>
+			<a href={ templ.URL(fmt.Sprintf("/%s", link.Code)) } class="shortLink" target="_blank">{ link.Code }</a>
 		</td>
 		<td>
 			<a href={ templ.URL(link.Url) } target="_blank">{ link.Url }</a>

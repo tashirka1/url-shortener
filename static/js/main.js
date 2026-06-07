@@ -1,7 +1,20 @@
+// htmx config
 htmx.config.globalViewTransitions = true;
 
-document.body.addEventListener("htmx:responseError", function (event) {
-  if (event.detail.xhr.status === 401) {
-    window.location.href = "/auth/login";
-  }
+// clipboard
+const shortLinks = document.querySelectorAll(".shortLink");
+shortLinks.forEach((shortLink) => {
+  shortLink.addEventListener("click", async (event) => {
+    event.preventDefault();
+    try {
+      await navigator.clipboard.writeText(event.currentTarget.href);
+      const oldValue = shortLink.textContent;
+      shortLink.textContent = "Copied!";
+      setTimeout(() => {
+        shortLink.textContent = oldValue;
+      }, 2000);
+    } catch (err) {
+      console.error("Failed to copy text: ", err);
+    }
+  });
 });
