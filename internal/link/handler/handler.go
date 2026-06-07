@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"url_shortener/internal/core/session"
-	coreview "url_shortener/internal/core/view"
+	core_view "url_shortener/internal/core/view"
 	"url_shortener/internal/link/model"
 	"url_shortener/internal/link/service"
 	"url_shortener/internal/link/storage"
@@ -48,7 +48,7 @@ func (h *Link) GetCreateLink(c echo.Context) error {
 		slog.Error("failed to list links", "user_id", userId, "error", err.Error())
 		return echo.NewHTTPError(http.StatusInternalServerError, "Internal Error")
 	}
-	return coreview.RenderTemplate(c, view.CreateLink(userId, links))
+	return core_view.RenderTemplate(c, view.CreateLink(userId, links))
 }
 
 func (h *Link) PostCreateLink(c echo.Context) error {
@@ -59,7 +59,7 @@ func (h *Link) PostCreateLink(c echo.Context) error {
 		slog.Warn("validation error", "user_id", userId, "error", err.Error())
 		c.Response().Header().Set("HX-Retarget", "#create-link-errors")
 		c.Response().Header().Set("HX-Reswap", "innerHTML")
-		return coreview.RenderTemplate(c, view.CreateLinkError(err.Error()))
+		return core_view.RenderTemplate(c, view.CreateLinkError(err.Error()))
 	}
 
 	link, err := h.s.CreateLink(c.Request().Context(), url, userId)
@@ -67,13 +67,13 @@ func (h *Link) PostCreateLink(c echo.Context) error {
 		slog.Warn("duplicate link", "user_id", userId, "url", url)
 		c.Response().Header().Set("HX-Retarget", "#create-link-errors")
 		c.Response().Header().Set("HX-Reswap", "innerHTML")
-		return coreview.RenderTemplate(c, view.CreateLinkError("this URL already exists"))
+		return core_view.RenderTemplate(c, view.CreateLinkError("this URL already exists"))
 	}
 	if err != nil {
 		slog.Error("failed to create link", "user_id", userId, "error", err.Error())
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create link")
 	}
-	return coreview.RenderTemplate(c, view.Link(link))
+	return core_view.RenderTemplate(c, view.Link(link))
 }
 
 func (h *Link) ListLink(c echo.Context) error {
@@ -87,7 +87,7 @@ func (h *Link) ListLink(c echo.Context) error {
 		slog.Error("failed to list links", "user_id", userId, "error", err.Error())
 		return echo.NewHTTPError(http.StatusInternalServerError, "Internal Error")
 	}
-	return coreview.RenderTemplate(c, view.ListLink(links))
+	return core_view.RenderTemplate(c, view.ListLink(links))
 }
 
 func (h *Link) RemoveLink(c echo.Context) error {
@@ -116,7 +116,7 @@ func (h *Link) RedirectLink(c echo.Context) error {
 }
 
 func (h *Link) Main(c echo.Context) error {
-	return coreview.RenderTemplate(c, view.Main())
+	return core_view.RenderTemplate(c, view.Main())
 }
 
 func SetupHandlers(e *echo.Echo, db *sql.DB, sessionStore *sessions.CookieStore) {

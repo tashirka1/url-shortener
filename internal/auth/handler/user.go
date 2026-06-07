@@ -12,7 +12,7 @@ import (
 	"url_shortener/internal/auth/storage"
 	"url_shortener/internal/auth/view"
 	"url_shortener/internal/core/session"
-	coreview "url_shortener/internal/core/view"
+	core_view "url_shortener/internal/core/view"
 
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
@@ -51,7 +51,7 @@ func validateRegister(email, password string) error {
 
 func (h *User) GetLogin(c echo.Context) error {
 	userId := session.GetUserId(c)
-	return coreview.RenderTemplate(c, view.Login(userId))
+	return core_view.RenderTemplate(c, view.Login(userId))
 }
 
 func (h *User) PostLogin(c echo.Context) error {
@@ -62,7 +62,7 @@ func (h *User) PostLogin(c echo.Context) error {
 		slog.Warn("login validation error", "email", email, "error", err.Error())
 		c.Response().Header().Set("HX-Retarget", "#errors")
 		c.Response().Header().Set("HX-Reswap", "innerHTML")
-		return coreview.RenderTemplate(c, view.LoginError(err.Error()))
+		return core_view.RenderTemplate(c, view.LoginError(err.Error()))
 	}
 
 	user, err := h.s.CheckUser(c.Request().Context(), email, password)
@@ -72,10 +72,10 @@ func (h *User) PostLogin(c echo.Context) error {
 		c.Response().Header().Set("HX-Reswap", "innerHTML")
 		if errors.Is(err, model.ErrInvalidPassword) {
 			slog.Warn("login failed", "email", email, "error", "invalid password")
-			return coreview.RenderTemplate(c, view.LoginError("password isn't correct"))
+			return core_view.RenderTemplate(c, view.LoginError("password isn't correct"))
 		} else if errors.Is(err, model.ErrUserNotFound) {
 			slog.Warn("login failed", "email", email, "error", "email not found")
-			return coreview.RenderTemplate(c, view.LoginError("email not found"))
+			return core_view.RenderTemplate(c, view.LoginError("email not found"))
 		}
 	}
 
@@ -100,7 +100,7 @@ func (h *User) Register(c echo.Context) error {
 			slog.Warn("register validation error", "email", email, "error", err.Error())
 			c.Response().Header().Set("HX-Retarget", "#errors")
 			c.Response().Header().Set("HX-Reswap", "innerHTML")
-			return coreview.RenderTemplate(c, view.RegisterError(err.Error()))
+			return core_view.RenderTemplate(c, view.RegisterError(err.Error()))
 		}
 
 		err := h.s.CreateUser(c.Request().Context(), email, password)
@@ -110,7 +110,7 @@ func (h *User) Register(c echo.Context) error {
 				slog.Warn("register failed", "email", email, "error", "email already in use")
 				c.Response().Header().Set("HX-Retarget", "#errors")
 				c.Response().Header().Set("HX-Reswap", "innerHTML")
-				return coreview.RenderTemplate(c, view.RegisterError("the email is already in use"))
+				return core_view.RenderTemplate(c, view.RegisterError("the email is already in use"))
 			}
 		}
 
@@ -120,7 +120,7 @@ func (h *User) Register(c echo.Context) error {
 	}
 
 	userId := session.GetUserId(c)
-	return coreview.RenderTemplate(c, view.Register(userId))
+	return core_view.RenderTemplate(c, view.Register(userId))
 }
 
 func SetupHandlers(e *echo.Echo, db *sql.DB, sessionStore *sessions.CookieStore) {
