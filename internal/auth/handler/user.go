@@ -92,40 +92,40 @@ func (h *User) Logout(c echo.Context) error {
 	return c.Redirect(http.StatusSeeOther, "/auth/login")
 }
 
-func (h *User) Register(c echo.Context) error {
-	if c.Request().Method == "POST" {
-		email := c.FormValue("email")
-		password := c.FormValue("password")
-
-		if err := validateRegister(email, password); err != nil {
-			slog.Warn("register validation error", "email", email, "error", err.Error())
-			c.Response().Header().Set("HX-Retarget", "#errors")
-			c.Response().Header().Set("HX-Reswap", "innerHTML")
-			return core_view.RenderTemplate(c, view.RegisterError(err.Error()))
-		}
-
-		err := h.s.CreateUser(c.Request().Context(), email, password)
-
-		if err != nil {
-			if errors.Is(err, model.ErrUserAlreadyExists) {
-				slog.Warn("register failed", "email", email, "error", "email already in use")
-				c.Response().Header().Set("HX-Retarget", "#errors")
-				c.Response().Header().Set("HX-Reswap", "innerHTML")
-				return core_view.RenderTemplate(c, view.RegisterError("the email is already in use"))
-			}
-			slog.Error("register failed", "email", email, "error", err)
-			c.Response().Header().Set("HX-Retarget", "#errors")
-			c.Response().Header().Set("HX-Reswap", "innerHTML")
-			return core_view.RenderTemplate(c, view.RegisterError("internal error"))
-		}
-
-		slog.Info("user registered", "email", email)
-		c.Response().Header().Set("HX-Redirect", "/auth/login")
-		return nil
-	}
-
+func (h *User) GetRegister(c echo.Context) error {
 	userId := session.GetUserId(c)
 	return core_view.RenderTemplate(c, view.Register(userId))
+}
+
+func (h *User) PostRegister(c echo.Context) error {
+	email := c.FormValue("email")
+	password := c.FormValue("password")
+
+	if err := validateRegister(email, password); err != nil {
+		slog.Warn("register validation error", "email", email, "error", err.Error())
+		c.Response().Header().Set("HX-Retarget", "#errors")
+		c.Response().Header().Set("HX-Reswap", "innerHTML")
+		return core_view.RenderTemplate(c, view.RegisterError(err.Error()))
+	}
+
+	err := h.s.CreateUser(c.Request().Context(), email, password)
+
+	if err != nil {
+		if errors.Is(err, model.ErrUserAlreadyExists) {
+			slog.Warn("register failed", "email", email, "error", "email already in use")
+			c.Response().Header().Set("HX-Retarget", "#errors")
+			c.Response().Header().Set("HX-Reswap", "innerHTML")
+			return core_view.RenderTemplate(c, view.RegisterError("the email is already in use"))
+		}
+		slog.Error("register failed", "email", email, "error", err)
+		c.Response().Header().Set("HX-Retarget", "#errors")
+		c.Response().Header().Set("HX-Reswap", "innerHTML")
+		return core_view.RenderTemplate(c, view.RegisterError("internal error"))
+	}
+
+	slog.Info("user registered", "email", email)
+	c.Response().Header().Set("HX-Redirect", "/auth/login")
+	return nil
 }
 
 func SetupHandlers(e *echo.Echo, db *sql.DB) {
@@ -137,6 +137,6 @@ func SetupHandlers(e *echo.Echo, db *sql.DB) {
 	group.GET("/login", handler.GetLogin)
 	group.POST("/login", handler.PostLogin)
 	group.GET("/logout", handler.Logout)
-	group.GET("/register", handler.Register)
-	group.POST("/register", handler.Register)
+	group.GET("/register", handler.GetRegister)
+	group.POST("/register", handler.PostRegister)
 }
