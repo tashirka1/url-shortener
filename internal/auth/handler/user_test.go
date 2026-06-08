@@ -23,8 +23,8 @@ func testArgonHash(password string) (string, error) {
 	if _, err := rand.Read(salt); err != nil {
 		return "", err
 	}
-	hash := argon2.IDKey([]byte(password), salt, 3, 64*1024, 4, 32)
-	return fmt.Sprintf("$argon2id$v=%d$m=%d,t=%d,p=%d$%s$%s", argon2.Version, 64*1024, 3, 4,
+	hash := argon2.IDKey([]byte(password), salt, 3, 19*1024, 4, 32)
+	return fmt.Sprintf("$argon2id$v=%d$m=%d,t=%d,p=%d$%s$%s", argon2.Version, 19*1024, 3, 4,
 		base64.RawStdEncoding.EncodeToString(salt),
 		base64.RawStdEncoding.EncodeToString(hash)), nil
 }
