@@ -16,7 +16,7 @@ templ CreateLink(userId int, links []model.Link) {
 		<div>
 			<div>
 				<div style="width: fit-content;">
-					<form hx-post="/link/create-link" hx-target="#list-links" hx-swap="afterbegin" hx-on::after-request="this.setAttribute('hx-target', '#list-links'); this.setAttribute('hx-swap', 'afterbegin'); document.getElementById('create-link-errors').innerHTML = ''; if(event.detail.successful) this.reset()" hx-on::error="this.setAttribute('hx-target', '#create-link-errors'); this.setAttribute('hx-swap', 'innerHTML')">
+					<form hx-post="/link/create-link" hx-target="#list-links" hx-swap="afterbegin" hx-on::after-request="if(event.detail.successful) { document.getElementById('create-link-errors').innerHTML = ''; this.reset() }">
 						<fieldset role="group">
 							<input type="text" name="url" placeholder="URL" aria-label="URL" required/>
 							<button>Create</button>
