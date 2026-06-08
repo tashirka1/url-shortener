@@ -26,11 +26,11 @@ func AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 
 func GetUserId(c echo.Context) int {
 	sess, _ := session.Get(UserSessionsKey, c)
-	userId := sess.Values[UserIdKey]
-	if userId != nil {
-		return userId.(int)
+	userId, ok := sess.Values[UserIdKey].(int)
+	if !ok {
+		return 0
 	}
-	return 0
+	return userId
 }
 
 func SetUserId(c echo.Context, value int) {

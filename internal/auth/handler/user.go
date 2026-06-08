@@ -14,7 +14,6 @@ import (
 	"url_shortener/internal/core/session"
 	core_view "url_shortener/internal/core/view"
 
-	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
 )
 
@@ -129,8 +128,8 @@ func (h *User) Register(c echo.Context) error {
 	return core_view.RenderTemplate(c, view.Register(userId))
 }
 
-func SetupHandlers(e *echo.Echo, db *sql.DB, sessionStore *sessions.CookieStore) {
-	storage := storage.NewUser(db, sessionStore)
+func SetupHandlers(e *echo.Echo, db *sql.DB) {
+	storage := storage.NewUser(db)
 	service := service.NewUser(storage)
 	handler := NewUser(service)
 

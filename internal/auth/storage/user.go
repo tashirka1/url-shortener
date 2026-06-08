@@ -7,8 +7,6 @@ import (
 	"log/slog"
 	"strings"
 	"url_shortener/internal/auth/model"
-
-	"github.com/gorilla/sessions"
 )
 
 type UserStorage interface {
@@ -17,12 +15,11 @@ type UserStorage interface {
 }
 
 type User struct {
-	db           *sql.DB
-	sessionStore *sessions.CookieStore
+	db *sql.DB
 }
 
-func NewUser(db *sql.DB, sessionStore *sessions.CookieStore) *User {
-	return &User{db: db, sessionStore: sessionStore}
+func NewUser(db *sql.DB) *User {
+	return &User{db: db}
 }
 
 func (r *User) CheckEmail(ctx context.Context, email string) (model.User, error) {

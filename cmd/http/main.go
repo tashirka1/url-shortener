@@ -92,8 +92,8 @@ func main() {
 	e.GET("/health", health.Handler(database))
 
 	// routes
-	auth_handler.SetupHandlers(e, database, sessionStore)
-	link_handler.SetupHandlers(e, database, sessionStore)
+	auth_handler.SetupHandlers(e, database)
+	link_handler.SetupHandlers(e, database)
 
 	// Start Server
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)

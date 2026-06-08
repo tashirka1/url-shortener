@@ -76,12 +76,12 @@ func (r *Link) RemoveLink(ctx context.Context, userId int, code string) error {
 
 func (r *Link) GetLink(ctx context.Context, code string) (string, error) {
 	row := r.db.QueryRowContext(ctx, "SELECT url FROM link_link WHERE code=?", code)
-	var link model.Link
-	err := row.Scan(&link.Url)
+	var url string
+	err := row.Scan(&url)
 	if err != nil {
 		return "", err
 	}
-	return link.Url, nil
+	return url, nil
 }
 
 func (r *Link) ClickLink(ctx context.Context, code string) error {

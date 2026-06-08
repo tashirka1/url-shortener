@@ -16,7 +16,6 @@ import (
 	"url_shortener/internal/link/storage"
 	"url_shortener/internal/link/view"
 
-	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
 )
 
@@ -121,7 +120,7 @@ func (h *Link) Main(c echo.Context) error {
 	return core_view.RenderTemplate(c, view.Main())
 }
 
-func SetupHandlers(e *echo.Echo, db *sql.DB, sessionStore *sessions.CookieStore) {
+func SetupHandlers(e *echo.Echo, db *sql.DB) {
 	storage := storage.NewLink(db)
 	service := service.NewLink(storage)
 	handler := NewLink(service)
