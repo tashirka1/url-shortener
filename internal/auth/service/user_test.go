@@ -10,7 +10,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type mockUserStorage struct {
@@ -36,12 +35,12 @@ var _ storage.UserStorage = (*mockUserStorage)(nil)
 
 func TestCheckUser_Success(t *testing.T) {
 	password := "correct-password"
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
+	hash, err := argonHash(password)
 	require.NoError(t, err)
 
 	mock := &mockUserStorage{
 		checkEmailFunc: func(ctx context.Context, email string) (model.User, error) {
-			return model.User{Id: 1, Email: email, Password: string(hash)}, nil
+			return model.User{Id: 1, Email: email, Password: hash}, nil
 		},
 	}
 	s := NewUser(mock)
@@ -54,12 +53,12 @@ func TestCheckUser_Success(t *testing.T) {
 }
 
 func TestCheckUser_WrongPassword(t *testing.T) {
-	hash, err := bcrypt.GenerateFromPassword([]byte("correct-password"), bcrypt.MinCost)
+	hash, err := argonHash("correct-password")
 	require.NoError(t, err)
 
 	mock := &mockUserStorage{
 		checkEmailFunc: func(ctx context.Context, email string) (model.User, error) {
-			return model.User{Id: 1, Email: email, Password: string(hash)}, nil
+			return model.User{Id: 1, Email: email, Password: hash}, nil
 		},
 	}
 	s := NewUser(mock)
@@ -104,8 +103,8 @@ func TestCreateUser_Success(t *testing.T) {
 		createUserFunc: func(ctx context.Context, email string, hashedPassword []byte) error {
 			assert.Equal(t, "new@example.com", email)
 			assert.NotEmpty(t, hashedPassword)
-			// verify the password was hashed with bcrypt cost 12
-			err := bcrypt.CompareHashAndPassword(hashedPassword, []byte("user-password"))
+			ok, err := argonVerify("user-password", string(hashedPassword))
+			assert.True(t, ok)
 			assert.NoError(t, err)
 			return nil
 		},

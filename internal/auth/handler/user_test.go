@@ -2,7 +2,10 @@ package handler
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -12,8 +15,19 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/crypto/argon2"
 )
+
+func testArgonHash(password string) (string, error) {
+	salt := make([]byte, 16)
+	if _, err := rand.Read(salt); err != nil {
+		return "", err
+	}
+	hash := argon2.IDKey([]byte(password), salt, 3, 64*1024, 4, 32)
+	return fmt.Sprintf("$argon2id$v=%d$m=%d,t=%d,p=%d$%s$%s", argon2.Version, 64*1024, 3, 4,
+		base64.RawStdEncoding.EncodeToString(salt),
+		base64.RawStdEncoding.EncodeToString(hash)), nil
+}
 
 // MockUserStorage implements RepositoryInterface for testing
 type MockUserStorage struct {
@@ -37,12 +51,12 @@ func (m *MockUserStorage) CreateUser(ctx context.Context, email string, hashedPa
 
 func TestLogin_Success(t *testing.T) {
 	password := "testpassword"
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
+	hash, err := testArgonHash(password)
 	require.NoError(t, err)
 
 	mockStorage := &MockUserStorage{
 		checkEmailFunc: func(ctx context.Context, email string) (model.User, error) {
-			return model.User{Id: 1, Email: email, Password: string(hash)}, nil
+			return model.User{Id: 1, Email: email, Password: hash}, nil
 		},
 	}
 
@@ -67,12 +81,12 @@ func TestLogin_Success(t *testing.T) {
 
 func TestLogin_InvalidPassword(t *testing.T) {
 	password := "correct-password"
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
+	hash, err := testArgonHash(password)
 	require.NoError(t, err)
 
 	mockStorage := &MockUserStorage{
 		checkEmailFunc: func(ctx context.Context, email string) (model.User, error) {
-			return model.User{Id: 1, Email: email, Password: string(hash)}, nil
+			return model.User{Id: 1, Email: email, Password: hash}, nil
 		},
 	}
 

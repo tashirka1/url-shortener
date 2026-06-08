@@ -26,7 +26,7 @@ cmd/http/main.go   — точка входа (Echo + сессии + хендле
 cmd/worker/main.go — заглушка (печатает "Hello"), игнорировать
 internal/
   core/       — общее: БД, миграции, middleware сессий, BaseView
-  auth/       — handler → service → storage → SQLite (bcrypt cost 12)
+  auth/       — handler → service → storage → SQLite (argon2id m=64M t=3 p=4)
   link/       — handler → service → repository → SQLite
 static/       — PicoCSS, HTMX 2.0, main.js, пустой main.css
 ```
