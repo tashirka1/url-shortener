@@ -79,6 +79,9 @@ templ LastLink(link model.Link) {
 }
 
 templ ListLink(links []model.Link) {
+	if len(links) == 0 {
+		return
+	}
 	for _, link:= range links {
 		if link.Id == links[len(links)-1].Id {
 			@LastLink(link)
