@@ -13,10 +13,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func sentinelErr(err error) error {
-	return err
-}
-
 type mockUserStorage struct {
 	checkEmailFunc func(ctx context.Context, email string) (model.User, error)
 	createUserFunc func(ctx context.Context, email string, hashedPassword []byte) error
@@ -92,7 +88,7 @@ func TestCheckUser_StorageError(t *testing.T) {
 	dbErr := errors.New("db connection failed")
 	mock := &mockUserStorage{
 		checkEmailFunc: func(ctx context.Context, email string) (model.User, error) {
-			return model.User{}, sentinelErr(dbErr)
+			return model.User{}, dbErr
 		},
 	}
 	s := NewUser(mock)
@@ -124,7 +120,7 @@ func TestCreateUser_Success(t *testing.T) {
 func TestCreateUser_StorageError(t *testing.T) {
 	mock := &mockUserStorage{
 		createUserFunc: func(ctx context.Context, email string, hashedPassword []byte) error {
-			return sentinelErr(model.ErrUserAlreadyExists)
+			return model.ErrUserAlreadyExists
 		},
 	}
 	s := NewUser(mock)

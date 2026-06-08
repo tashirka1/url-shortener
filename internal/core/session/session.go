@@ -20,11 +20,11 @@ func AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		if err != nil || sess == nil {
 			slog.Warn("session get failed", "error", err)
 			c.Response().Header().Set("HX-Redirect", "/auth/login")
-			return view.RenderTemplate(c, view.Unathorized(0))
+			return view.RenderTemplate(c, view.Unauthorized(0))
 		}
 		if userId, ok := sess.Values[UserIdKey].(int); !ok || userId == 0 {
 			c.Response().Header().Set("HX-Redirect", "/auth/login")
-			return view.RenderTemplate(c, view.Unathorized(0))
+			return view.RenderTemplate(c, view.Unauthorized(0))
 		}
 		return next(c)
 	}

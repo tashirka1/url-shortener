@@ -60,7 +60,9 @@ func runMigrations(db *sql.DB) error {
 		return err
 	}
 
-	if err := goose.UpContext(context.Background(), db, "migrations"); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	if err := goose.UpContext(ctx, db, "migrations"); err != nil {
 		return err
 	}
 

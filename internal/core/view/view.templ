@@ -46,10 +46,10 @@ templ Base(title string, userId int) {
 	</html>
 }
 
-templ Unathorized(userId int) {
+templ Unauthorized(userId int) {
 	@Base("URL Shortener", userId) {
 		<div>
-			<h1>Unathorized</h1>
+			<h1>Unauthorized</h1>
 			<a href="/auth/register">Register</a>
 			<a href="/auth/login">Login</a>
 		</div>
