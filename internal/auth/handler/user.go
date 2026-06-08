@@ -77,6 +77,8 @@ func (h *User) PostLogin(c echo.Context) error {
 			slog.Warn("login failed", "email", email, "error", "email not found")
 			return core_view.RenderTemplate(c, view.LoginError("email not found"))
 		}
+		slog.Error("login failed", "email", email, "error", err)
+		return core_view.RenderTemplate(c, view.LoginError("internal error"))
 	}
 
 	slog.Info("user logged in", "user_id", user.Id, "email", email)
