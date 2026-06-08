@@ -19,6 +19,10 @@ func AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		sess, err := session.Get(UserSessionsKey, c)
 		if err != nil || sess == nil {
 			slog.Warn("session get failed", "error", err)
+			sess.Options.MaxAge = -1
+			if err := sess.Save(c.Request(), c.Response()); err != nil {
+				slog.Error("session save failed", "error", err)
+			}
 			c.Response().Header().Set("HX-Redirect", "/auth/login")
 			return view.RenderTemplate(c, view.Unauthorized(0))
 		}
