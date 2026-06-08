@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log/slog"
 	"url_shortener/internal/core/base62"
 	"url_shortener/internal/link/model"
@@ -33,11 +34,17 @@ func (r *Link) CreateLink(ctx context.Context, url string, userId int) (model.Li
 	if err != nil {
 		return model.Link{}, err
 	}
-	rows, _ := row.RowsAffected()
+	rows, err := row.RowsAffected()
+	if err != nil {
+		return model.Link{}, fmt.Errorf("rows affected: %w", err)
+	}
 	if rows == 0 {
 		return model.Link{}, model.ErrLinkAlreadyExists
 	}
-	id, _ := row.LastInsertId() // SQLite doesn't support LastInsertId, ignore error
+	id, err := row.LastInsertId()
+	if err != nil {
+		return model.Link{}, fmt.Errorf("last insert id: %w", err)
+	}
 	return model.Link{Id: id, Code: code, Url: url}, nil
 }
 
