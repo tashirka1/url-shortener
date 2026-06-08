@@ -1,53 +1,23 @@
 # url_shortener
 
 ## how to run
-run with autoreload
-```
+
+```bash
 cp env-example .env
-make air
+make air   # with autoreload
 ```
 
-run as docker service
-```
+```bash
 cp env-example .env
-make up
+make up    # docker
 ```
 
 ## docs
+
 [tutorial](/docs/tutorial)
 
-## use cases
-register user
-login user
-create url
-list urls
-redirect url
-
-## wrk
-```
-wrk -c 100 -t 10 -d 10 --latency http://localhost:8000/link/create-link
-wrk2 -c 100 -d 10 -t 10 --latency --rate 500 https://url.tashirka.ru/link/create-link
-```
-
-## escape analysis
-```
-go build -gcflags=-m -o bin/http cmd/http/main.go 2>&1 | grep hashtriemap.go
-```
-
-## build small binary
-```
-go build -trimpath -ldflags="-s -w" -o bin/http cmd/http/main.go
-```
-
 ## testing
-```
-go test -v
-go test -v -coverprofile cover.out ./...
-go tool cover -html=cover.out
-```
 
-# litestream
-```
-litestream replicate -config ./litestream_replicate.yml
-litestream restore -config ./litestream_restore.yml ./main.db
+```bash
+go test -v ./...
 ```
