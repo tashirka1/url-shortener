@@ -54,7 +54,7 @@ templ Link(link model.Link) {
 		</td>
 		<td>{ fmt.Sprintf("%d", link.Clicks) }</td>
 		<td>
-			<button hx-delete={ string(templ.URL(fmt.Sprintf("/link/remove-link/%s", link.Code))) } hx-target="closest tr" hx-swap="innerHTML">
+			<button hx-delete={ string(templ.URL(fmt.Sprintf("/link/remove-link/%s", link.Code))) } hx-target="closest tr" hx-swap="outerHTML">
 				Delete
 			</button>
 		</td>
@@ -71,7 +71,7 @@ templ LastLink(link model.Link) {
 		</td>
 		<td>{ fmt.Sprintf("%d", link.Clicks) }</td>
 		<td>
-			<button hx-delete={ string(templ.URL(fmt.Sprintf("/link/remove-link/%s", link.Code))) } hx-target="closest tr" hx-swap="innerHTML">
+			<button hx-delete={ string(templ.URL(fmt.Sprintf("/link/remove-link/%s", link.Code))) } hx-target="closest tr" hx-swap="outerHTML">
 				Delete
 			</button>
 		</td>
@@ -79,9 +79,6 @@ templ LastLink(link model.Link) {
 }
 
 templ ListLink(links []model.Link) {
-	if len(links) == 0 {
-		return
-	}
 	for _, link:= range links {
 		if link.Id == links[len(links)-1].Id {
 			@LastLink(link)
