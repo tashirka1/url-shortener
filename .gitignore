@@ -3,3 +3,4 @@ tmp
 *_templ.go
 .env
 bin/*
+http
