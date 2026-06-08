@@ -93,6 +93,10 @@ func (h *Link) RemoveLink(c echo.Context) error {
 	userId := session.GetUserId(c)
 	code := c.Param("code")
 	err := h.s.RemoveLink(c.Request().Context(), userId, code)
+	if errors.Is(err, sql.ErrNoRows) {
+		slog.Warn("link not found for removal", "user_id", userId, "code", code)
+		return c.NoContent(http.StatusNotFound)
+	}
 	if err != nil {
 		slog.Error("failed to remove link", "user_id", userId, "code", code, "error", err.Error())
 		return echo.NewHTTPError(http.StatusInternalServerError, "Internal Error")

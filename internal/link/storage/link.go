@@ -74,9 +74,16 @@ func (r *Link) ListLink(ctx context.Context, userId, cursor int) ([]model.Link, 
 }
 
 func (r *Link) RemoveLink(ctx context.Context, userId int, code string) error {
-	_, err := r.db.ExecContext(ctx, "DELETE FROM link_link WHERE user_id=? AND code=?", userId, code)
+	res, err := r.db.ExecContext(ctx, "DELETE FROM link_link WHERE user_id=? AND code=?", userId, code)
 	if err != nil {
 		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("rows affected: %w", err)
+	}
+	if rows == 0 {
+		return sql.ErrNoRows
 	}
 	return nil
 }
@@ -92,9 +99,16 @@ func (r *Link) GetLink(ctx context.Context, code string) (string, error) {
 }
 
 func (r *Link) ClickLink(ctx context.Context, code string) error {
-	_, err := r.db.ExecContext(ctx, "UPDATE link_link SET clicks=clicks + 1 WHERE code=?", code)
+	res, err := r.db.ExecContext(ctx, "UPDATE link_link SET clicks=clicks + 1 WHERE code=?", code)
 	if err != nil {
 		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("rows affected: %w", err)
+	}
+	if rows == 0 {
+		return sql.ErrNoRows
 	}
 	return nil
 }
