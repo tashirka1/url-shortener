@@ -114,6 +114,10 @@ func (h *User) Register(c echo.Context) error {
 				c.Response().Header().Set("HX-Reswap", "innerHTML")
 				return core_view.RenderTemplate(c, view.RegisterError("the email is already in use"))
 			}
+			slog.Error("register failed", "email", email, "error", err)
+			c.Response().Header().Set("HX-Retarget", "#errors")
+			c.Response().Header().Set("HX-Reswap", "innerHTML")
+			return core_view.RenderTemplate(c, view.RegisterError("internal error"))
 		}
 
 		slog.Info("user registered", "email", email)
