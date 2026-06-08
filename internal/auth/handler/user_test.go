@@ -11,6 +11,8 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // MockUserStorage implements RepositoryInterface for testing
@@ -34,40 +36,43 @@ func (m *MockUserStorage) CreateUser(ctx context.Context, email string, hashedPa
 }
 
 func TestLogin_Success(t *testing.T) {
-	// setup mock repository
+	password := "testpassword"
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
+	require.NoError(t, err)
+
 	mockStorage := &MockUserStorage{
 		checkEmailFunc: func(ctx context.Context, email string) (model.User, error) {
-			return model.User{Id: 1, Email: email, Password: "$2a$12$K6sIYqJZkS8kVqJZkS8kVqJZkS8kVqJZkS8kVqJZkS8kVqJZkS8kV"}, nil
+			return model.User{Id: 1, Email: email, Password: string(hash)}, nil
 		},
 	}
 
-	// create service with mock
 	service := service.NewUser(mockStorage)
 	handler := NewUser(service)
 
-	// setup echo
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodPost, "/auth/login", nil)
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationForm)
 	req.Form = map[string][]string{
 		"email":    {"test@example.com"},
-		"password": {"testpassword"},
+		"password": {password},
 	}
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	// Assertions
-	err := handler.PostLogin(c)
+	err = handler.PostLogin(c)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Contains(t, rec.Header().Get("HX-Redirect"), "/link/create-link")
 }
 
 func TestLogin_InvalidPassword(t *testing.T) {
-	// setup mock repository — return real bcrypt hash, service will fail Compare
-	realHash := "$2a$12$K6sIYqJZkS8kVqJZkS8kVqJZkS8kVqJZkS8kVqJZkS8kVqJZkS8kV"
+	password := "correct-password"
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
+	require.NoError(t, err)
+
 	mockStorage := &MockUserStorage{
 		checkEmailFunc: func(ctx context.Context, email string) (model.User, error) {
-			return model.User{Id: 1, Email: email, Password: realHash}, nil
+			return model.User{Id: 1, Email: email, Password: string(hash)}, nil
 		},
 	}
 
@@ -79,12 +84,12 @@ func TestLogin_InvalidPassword(t *testing.T) {
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationForm)
 	req.Form = map[string][]string{
 		"email":    {"test@example.com"},
-		"password": {"wrongpassword"},
+		"password": {"wrong-password"},
 	}
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	err := handler.PostLogin(c)
+	err = handler.PostLogin(c)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rec.Code)
 	assert.Contains(t, rec.Body.String(), "password isn&#39;t correct")
