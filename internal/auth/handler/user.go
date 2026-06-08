@@ -5,7 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"strings"
+	"net/mail"
 
 	"url_shortener/internal/auth/model"
 	"url_shortener/internal/auth/service"
@@ -39,7 +39,7 @@ func validateRegister(email, password string) error {
 	if email == "" {
 		return errors.New("email is required")
 	}
-	if !strings.Contains(email, "@") || !strings.Contains(email, ".") {
+	if _, err := mail.ParseAddress(email); err != nil {
 		return errors.New("email must be a valid email address")
 	}
 	if len(password) < 8 {
