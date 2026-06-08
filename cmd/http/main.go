@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -24,42 +25,47 @@ import (
 )
 
 func main() {
-	// load .env
+	if err := Run(); err != nil {
+		slog.Error("fatal", "error", err)
+		os.Exit(1)
+	}
+}
+
+func Run() error {
+	// env
 	if err := godotenv.Load(); err != nil {
 		slog.Warn(".env file not found, using environment variables")
 	}
 
 	sessionKey := os.Getenv("SESSION_KEY")
 	if sessionKey == "" {
-		slog.Error("SESSION_KEY is not set")
-		os.Exit(1)
+		return fmt.Errorf("SESSION_KEY is not set")
 	}
 
 	dbName := os.Getenv("DB_NAME")
 	if dbName == "" {
-		slog.Error("DB_NAME is not set")
-		os.Exit(1)
+		return fmt.Errorf("DB_NAME is not set")
 	}
 
 	// logger
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
+	// database
 	database, err := db.NewDB(dbName)
 	if err != nil {
-		slog.Error("failed to open database", "error", err)
-		os.Exit(1)
+		return fmt.Errorf("failed to open database: %w", err)
 	}
 	defer database.Close()
 
-	// session store
+	// session
 	sessionStore := sessions.NewCookieStore([]byte(sessionKey))
 
 	// echo
 	e := echo.New()
-	e.HideBanner = true            // Hides the ASCII art banner
-	e.HidePort = true              // Hides the "HTTP server started on" message
-	e.Logger.SetOutput(io.Discard) // Discards all default engine logs
+	e.HideBanner = true
+	e.HidePort = true
+	e.Logger.SetOutput(io.Discard)
 
 	// middleware
 	protection := http.NewCrossOriginProtection()
@@ -73,11 +79,11 @@ func main() {
 	e.StaticFS("/static", echo.MustSubFS(url_shortener.EmbeddedStatic, "static"))
 	e.GET("/health", health.Handler(database))
 
-	// routes
+	// handler
 	auth_handler.SetupHandlers(e, database)
 	link_handler.SetupHandlers(e, database)
 
-	// Start Server
+	// signal
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -100,4 +106,5 @@ func main() {
 	}
 
 	slog.Info("server stopped")
+	return nil
 }
