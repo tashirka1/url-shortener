@@ -20,10 +20,10 @@ import (
 )
 
 type Link struct {
-	s *service.Link
+	s service.LinkService
 }
 
-func NewLink(s *service.Link) *Link {
+func NewLink(s service.LinkService) *Link {
 	return &Link{s: s}
 }
 
