@@ -106,13 +106,15 @@ func (h *Link) RedirectLink(c echo.Context) error {
 	url, err := h.s.GetLink(c.Request().Context(), code)
 	if err != nil {
 		slog.Warn("link not found", "code", code, "error", err.Error())
-		return c.Redirect(http.StatusSeeOther, "/auth/login")
+		return echo.NewHTTPError(http.StatusNotFound, "Link not found")
 	}
 	if url != "" {
-		h.s.ClickLink(c.Request().Context(), code)
+		if err := h.s.ClickLink(c.Request().Context(), code); err != nil {
+			slog.Error("failed to increment click", "code", code, "error", err.Error())
+		}
 		return c.Redirect(http.StatusSeeOther, url)
 	}
-	return c.Redirect(http.StatusSeeOther, "/auth/login")
+	return echo.NewHTTPError(http.StatusNotFound, "Link not found")
 }
 
 func (h *Link) Main(c echo.Context) error {
