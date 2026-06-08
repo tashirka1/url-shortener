@@ -39,7 +39,6 @@ func (s *User) CheckUser(ctx context.Context, email, password string) (model.Use
 		return model.User{}, errors.Join(model.ErrInvalidPassword, err)
 	}
 
-	slog.InfoContext(ctx, "user authenticated", "user_id", user.Id, "email", email)
 	return user, nil
 }
 
