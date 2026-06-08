@@ -23,23 +23,6 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 )
 
-func CustomHTTPErrorHandler(err error, c echo.Context) {
-	slog.Error("HTTP error", "error", err.Error(), "path", c.Request().URL.Path)
-
-	if he, ok := err.(*echo.HTTPError); ok {
-		c.JSON(he.Code, map[string]any{
-			"error":   http.StatusText(he.Code),
-			"message": he.Message,
-		})
-		return
-	}
-
-	c.JSON(http.StatusInternalServerError, map[string]any{
-		"error":   "Internal Server Error",
-		"message": err.Error(),
-	})
-}
-
 func main() {
 	// load .env
 	if err := godotenv.Load(); err != nil {
@@ -77,7 +60,6 @@ func main() {
 	e.HideBanner = true            // Hides the ASCII art banner
 	e.HidePort = true              // Hides the "HTTP server started on" message
 	e.Logger.SetOutput(io.Discard) // Discards all default engine logs
-	e.HTTPErrorHandler = CustomHTTPErrorHandler
 
 	// middleware
 	protection := http.NewCrossOriginProtection()
