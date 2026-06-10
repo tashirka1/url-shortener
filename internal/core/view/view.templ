@@ -48,10 +48,10 @@ templ Base(title string, userId int) {
 
 templ Unauthorized(userId int) {
 	@Base("URL Shortener", userId) {
-		<div>
-			<h1>Unauthorized</h1>
-			<a href="/auth/register">Register</a>
-			<a href="/auth/login">Login</a>
-		</div>
+		<article>
+			<header><strong>Unauthorized</strong></header>
+			<p>You need to <a href="/auth/login">login</a> to access this page.</p>
+			<p>Don't have an account? <a href="/auth/register">Register</a></p>
+		</article>
 	}
 }

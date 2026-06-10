@@ -17,11 +17,9 @@ templ LoginForm() {
 
 templ Login(userId int) {
 	@view.Base("URL Shortener", userId) {
-		<div class="grid">
-			<article style="margin: auto">
-				<h1>Login</h1>
-				@LoginForm()
-			</article>
-		</div>
+		<article>
+			<header><strong>Login</strong></header>
+			@LoginForm()
+		</article>
 	}
 }
