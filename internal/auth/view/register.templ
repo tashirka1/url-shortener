@@ -17,9 +17,11 @@ templ RegisterForm() {
 
 templ Register(userId int) {
 	@view.Base("URL Shortener", userId) {
-		<article>
-			<header><strong>Register</strong></header>
-			@RegisterForm()
-		</article>
+		<div class="grid">
+			<article style="margin: auto">
+				<header><strong>Register</strong></header>
+				@RegisterForm()
+			</article>
+		</div>
 	}
 }
