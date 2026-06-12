@@ -72,7 +72,7 @@ func (h *Link) PostCreateLink(c echo.Context) error {
 		slog.Error("failed to create link", "user_id", userId, "error", err.Error())
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create link")
 	}
-	c.Response().Header().Set("HX-Trigger", "resetCreateForm")
+	c.Response().Header().Set("HX-Trigger", "reset-create-form")
 	return core_view.RenderTemplate(c, view.CreateLinkSuccess(link))
 }
 
