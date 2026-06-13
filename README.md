@@ -21,3 +21,9 @@ make up    # docker
 ```bash
 go test -v ./...
 ```
+
+## Benchmarking
+
+```
+wrk -t10 -c100 -d5s http://localhost:8000
+```
