@@ -1,0 +1,2 @@
+SESSION_KEY=dev_key
+DB_NAME=./db/main.db

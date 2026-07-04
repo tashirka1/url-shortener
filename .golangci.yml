@@ -1,0 +1,47 @@
+version: "2"
+linters:
+  default: none
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - unconvert
+    - forbidigo
+    - bodyclose
+  settings:
+    govet:
+      enable-all: true # Включает все внутренние проверки типов и shadow-переменные
+    gocritic:
+      # Активируем жесткую проверку типов в gocritic
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+    forbidigo:
+      forbid:
+        - pattern: ^panic\(
+          msg: "запрещено: возвращай ошибку вместо panic"
+        - pattern: ^reflect\.
+          msg: "запрещено: не используй reflect"
+        - pattern: ^func init\(
+          msg: "запрещено: init() — используй явную инициализацию"
+  exclusions:
+    presets:
+      - comments
+      - std-error-handling
+      - common-false-positives
+      - legacy
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+      - path-except: _test\.go
+        linters:
+          - forbidigo
+run:
+  timeout: 3m
+  build-tags:
+    - fts5
+  issues-exit-code: 1

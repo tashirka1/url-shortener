@@ -1,0 +1,38 @@
+package view
+
+import "url_shortener/internal/rps/model"
+
+templ SimplePage() {
+	<h1>rps ok</h1>
+}
+
+templ InsertPage(id int64, payload string) {
+	<div>inserted { id } { payload }</div>
+}
+
+templ SelectJoinPage(rows []model.JoinRow) {
+	<table>
+		<thead>
+			<tr>
+				<th>id</th>
+				<th>payload</th>
+				<th>ts</th>
+				<th>duration</th>
+				<th>meta_key</th>
+				<th>meta_value</th>
+			</tr>
+		</thead>
+		<tbody>
+			for _, row := range rows {
+				<tr>
+					<td>{ row.ID }</td>
+					<td>{ row.Payload }</td>
+					<td>{ row.Ts }</td>
+					<td>{ row.Duration }</td>
+					<td>{ row.MetaKey }</td>
+					<td>{ row.MetaValue }</td>
+				</tr>
+			}
+		</tbody>
+	</table>
+}
