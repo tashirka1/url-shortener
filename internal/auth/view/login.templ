@@ -9,17 +9,17 @@ templ LoginError(err string) {
 templ LoginForm() {
 	<form hx-post="/auth/login">
 		<input type="email" name="email" placeholder="Email" aria-label="email" required/>
-		<input type="password" name="password" placeholder="Password" aria-label="password" required/>
-		<button>Login</button>
+		<input type="password" name="password" placeholder="Пароль" aria-label="password" required/>
+		<button>Войти</button>
 		<div id="errors" style="margin-top:5px;color: red"></div>
 	</form>
 }
 
 templ Login(userId int) {
-	@view.Base("URL Shortener", userId) {
+	@view.Base("URL shortener", userId) {
 		<div class="grid">
 			<article style="margin: auto">
-				<header><strong>Login</strong></header>
+				<header><strong>Вход</strong></header>
 				@LoginForm()
 			</article>
 		</div>

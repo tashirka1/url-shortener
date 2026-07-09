@@ -28,7 +28,7 @@ func validateLogin(email, password string) error {
 		return errors.New("email is required")
 	}
 	if password == "" {
-		return errors.New("password is required")
+		return errors.New("пароль обязателен")
 	}
 	return nil
 }
@@ -38,13 +38,13 @@ func validateRegister(email, password string) error {
 		return errors.New("email is required")
 	}
 	if _, err := mail.ParseAddress(email); err != nil {
-		return errors.New("email must be a valid email address")
+		return errors.New("email должен быть корректным")
 	}
 	if len(password) < 8 {
-		return errors.New("password must be at least 8 characters")
+		return errors.New("пароль должен быть не менее 8 символов")
 	}
 	if len(password) > 72 {
-		return errors.New("password must be at most 72 characters")
+		return errors.New("пароль должен быть не более 72 символов")
 	}
 	return nil
 }
@@ -72,10 +72,10 @@ func (h *User) PostLogin(c echo.Context) error {
 		c.Response().Header().Set("HX-Reswap", "innerHTML")
 		if errors.Is(err, model.ErrInvalidPassword) || errors.Is(err, model.ErrUserNotFound) {
 			slog.Warn("login failed", "email", email, "error", err)
-			return core_view.RenderTemplate(c, view.LoginError("invalid email or password"))
+			return core_view.RenderTemplate(c, view.LoginError("неверный email или пароль"))
 		}
 		slog.Error("login failed", "email", email, "error", err)
-		return core_view.RenderTemplate(c, view.LoginError("internal error"))
+		return core_view.RenderTemplate(c, view.LoginError("внутренняя ошибка"))
 	}
 
 	slog.Info("user logged in", "user_id", user.Id, "email", email)
@@ -113,12 +113,12 @@ func (h *User) PostRegister(c echo.Context) error {
 			slog.Warn("register failed", "email", email, "error", "email already in use")
 			c.Response().Header().Set("HX-Retarget", "#errors")
 			c.Response().Header().Set("HX-Reswap", "innerHTML")
-			return core_view.RenderTemplate(c, view.RegisterError("the email is already in use"))
+			return core_view.RenderTemplate(c, view.RegisterError("email уже используется"))
 		}
 		slog.Error("register failed", "email", email, "error", err)
 		c.Response().Header().Set("HX-Retarget", "#errors")
 		c.Response().Header().Set("HX-Reswap", "innerHTML")
-		return core_view.RenderTemplate(c, view.RegisterError("internal error"))
+		return core_view.RenderTemplate(c, view.RegisterError("внутренняя ошибка"))
 	}
 
 	slog.Info("user registered", "email", email)

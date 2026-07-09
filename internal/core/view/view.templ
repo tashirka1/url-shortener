@@ -11,10 +11,10 @@ templ Nav(title string, userId int) {
 		</ul>
 		<ul>
 			if userId != 0 {
-				<li><a href="/auth/logout">Logout</a></li>
+				<li><a href="/auth/logout">Выйти</a></li>
 			} else {
-				<li><a href="/auth/register">Register</a></li>
-				<li><a href="/auth/login">Login</a></li>
+				<li><a href="/auth/register">Регистрация</a></li>
+				<li><a href="/auth/login">Войти</a></li>
 			}
 		</ul>
 	</nav>
@@ -22,7 +22,7 @@ templ Nav(title string, userId int) {
 
 templ Base(title string, userId int) {
 	<!DOCTYPE html>
-	<html lang="en">
+	<html lang="ru">
 		<head>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -53,11 +53,11 @@ templ Base(title string, userId int) {
 }
 
 templ Unauthorized(userId int) {
-	@Base("URL Shortener", userId) {
+	@Base("url-shortener", userId) {
 		<article>
-			<header><strong>Unauthorized</strong></header>
-			<p>You need to <a href="/auth/login">login</a> to access this page.</p>
-			<p>Don't have an account? <a href="/auth/register">Register</a></p>
+			<header><strong>Доступ запрещён</strong></header>
+			<p>Для доступа к странице <a href="/auth/login">войдите</a>.</p>
+			<p>Нет аккаунта? <a href="/auth/register">Зарегистрируйтесь</a></p>
 		</article>
 	}
 }

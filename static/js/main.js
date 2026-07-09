@@ -10,7 +10,7 @@ document.body.addEventListener("click", async (event) => {
   try {
     await navigator.clipboard.writeText(link.href);
     const old = link.textContent;
-    link.textContent = "Copied!";
+    link.textContent = "Скопировано!";
     setTimeout(() => { link.textContent = old; }, 2000);
   } catch (err) {
     console.error("Failed to copy text: ", err);

@@ -16,15 +16,15 @@ templ CreateLinkSuccess(link model.Link) {
 }
 
 templ CreateLink(userId int, links []model.Link) {
-	@view.Base("URL Shortener", userId) {
+	@view.Base("URL shortener", userId) {
 		// <div hx-get="/link/create-link" hx-trigger="every 5s" hx-swap="none"></div>
 		<div>
 			<div class="grid">
 				<div>
 					<form hx-post="/link/create-link" hx-target="#list-links" hx-swap="afterbegin" hx-on:reset-create-form="this.reset()">
 						<fieldset role="group">
-							<input type="text" name="url" placeholder="URL" aria-label="URL" required/>
-							<button>Create</button>
+							<input type="text" name="url" placeholder="Ссылка" aria-label="URL" required/>
+							<button>Создать</button>
 						</fieldset>
 					</form>
 					<div id="create-link-errors" style="color:red; margin-bottom: 10px;"></div>
@@ -33,11 +33,11 @@ templ CreateLink(userId int, links []model.Link) {
 					<input
 						type="search"
 						name="q"
-						placeholder="Search links..."
+						placeholder="Поиск ссылок..."
 						hx-get="/link/search-link"
 						hx-trigger="keyup delay:300ms, search"
 						hx-target="#list-links"
-						aria-label="Search links"
+						aria-label="Поиск ссылок"
 					/>
 				</div>
 			</div>
@@ -45,10 +45,10 @@ templ CreateLink(userId int, links []model.Link) {
 				<table>
 					<thead>
 						<tr>
-							<th scope="col">Short link</th>
-							<th scope="col">URL</th>
-							<th scope="col">Clicks</th>
-							<th scope="col">Delete</th>
+							<th scope="col">Короткая ссылка</th>
+							<th scope="col">Ссылка</th>
+							<th scope="col">Переходы</th>
+							<th scope="col">Удалить</th>
 						</tr>
 					</thead>
 					<tbody id="list-links">
@@ -71,7 +71,7 @@ templ Link(link model.Link) {
 		<td>{ fmt.Sprintf("%d", link.Clicks) }</td>
 		<td>
 			<button hx-delete={ string(templ.URL(fmt.Sprintf("/link/remove-link/%s", link.Code))) } hx-target="closest tr" hx-swap="outerHTML">
-				Delete
+				Удалить
 			</button>
 		</td>
 	</tr>
@@ -88,7 +88,7 @@ templ LastLink(link model.Link) {
 		<td>{ fmt.Sprintf("%d", link.Clicks) }</td>
 		<td>
 			<button hx-delete={ string(templ.URL(fmt.Sprintf("/link/remove-link/%s", link.Code))) } hx-target="closest tr" hx-swap="outerHTML">
-				Delete
+				Удалить
 			</button>
 		</td>
 	</tr>

@@ -100,7 +100,7 @@ func TestLogin_InvalidPassword(t *testing.T) {
 	err = handler.PostLogin(c)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Contains(t, rec.Body.String(), "invalid email or password")
+	assert.Contains(t, rec.Body.String(), "неверный email или пароль")
 }
 
 func TestLogin_EmailNotFound(t *testing.T) {
@@ -127,5 +127,5 @@ func TestLogin_EmailNotFound(t *testing.T) {
 	err := handler.PostLogin(c)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Contains(t, rec.Body.String(), "invalid email or password")
+	assert.Contains(t, rec.Body.String(), "неверный email или пароль")
 }

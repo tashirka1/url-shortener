@@ -29,10 +29,10 @@ func NewLink(s service.LinkService) *Link {
 
 func validateURL(raw string) (string, error) {
 	if raw == "" {
-		return "", errors.New("url is required")
+		return "", errors.New("ссылка обязательна")
 	}
 	if len(raw) > model.MaxURLLength {
-		return "", errors.New("url is too long")
+		return "", errors.New("ссылка слишком длинная")
 	}
 	if !strings.Contains(raw, "://") {
 		raw = "https://" + raw
@@ -42,7 +42,7 @@ func validateURL(raw string) (string, error) {
 		return "", errors.New("invalid url")
 	}
 	if u.Scheme != "http" && u.Scheme != "https" {
-		return "", errors.New("only http and https are allowed")
+		return "", errors.New("только http и https")
 	}
 	if u.Host == "" || !strings.Contains(u.Host, ".") {
 		return "", errors.New("invalid url")
@@ -77,11 +77,11 @@ func (h *Link) PostCreateLink(c echo.Context) error {
 		slog.Warn("duplicate link", "user_id", userId, "url", url)
 		c.Response().Header().Set("HX-Retarget", "#create-link-errors")
 		c.Response().Header().Set("HX-Reswap", "innerHTML")
-		return core_view.RenderTemplate(c, view.CreateLinkError("this URL already exists"))
+		return core_view.RenderTemplate(c, view.CreateLinkError("эта ссылка уже существует"))
 	}
 	if err != nil {
 		slog.Error("failed to create link", "user_id", userId, "error", err.Error())
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create link")
+		return echo.NewHTTPError(http.StatusInternalServerError, "Ошибка создания ссылки")
 	}
 	c.Response().Header().Set("HX-Trigger", "reset-create-form")
 	return core_view.RenderTemplate(c, view.CreateLinkSuccess(link))
@@ -121,7 +121,7 @@ func (h *Link) RedirectLink(c echo.Context) error {
 	url, err := h.s.GetAndClick(c.Request().Context(), code)
 	if err != nil {
 		slog.Warn("link not found", "code", code, "error", err.Error())
-		return echo.NewHTTPError(http.StatusNotFound, "Link not found")
+		return echo.NewHTTPError(http.StatusNotFound, "Ссылка не найдена")
 	}
 	return c.Redirect(http.StatusSeeOther, url)
 }
@@ -134,7 +134,7 @@ func (h *Link) SearchLink(c echo.Context) error {
 		links, err := h.s.ListLink(c.Request().Context(), userId, math.MaxInt64)
 		if err != nil {
 			slog.Error("failed to list links on empty search", "user_id", userId, "error", err.Error())
-			return echo.NewHTTPError(http.StatusInternalServerError, "Internal Error")
+		return echo.NewHTTPError(http.StatusInternalServerError, "Внутренняя ошибка")
 		}
 		return core_view.RenderTemplate(c, view.ListLink(links))
 	}
@@ -146,7 +146,7 @@ func (h *Link) SearchLink(c echo.Context) error {
 	}
 
 	if len(links) == 0 {
-		return c.HTML(http.StatusOK, `<tr><td colspan="4" style="text-align:center;">No results found</td></tr>`)
+		return c.HTML(http.StatusOK, `<tr><td colspan="4" style="text-align:center;">Ничего не найдено</td></tr>`)
 	}
 	return core_view.RenderTemplate(c, view.SearchResults(links))
 }
