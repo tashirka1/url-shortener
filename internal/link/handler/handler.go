@@ -136,7 +136,7 @@ func (h *Link) SearchLink(c echo.Context) error {
 		links, err := h.s.ListLink(c.Request().Context(), userId, math.MaxInt64)
 		if err != nil {
 			slog.Error("failed to list links on empty search", "user_id", userId, "error", err.Error())
-		return echo.NewHTTPError(http.StatusInternalServerError, "Внутренняя ошибка")
+			return echo.NewHTTPError(http.StatusInternalServerError, "Внутренняя ошибка")
 		}
 		return core_view.RenderTemplate(c, view.ListLink(links))
 	}

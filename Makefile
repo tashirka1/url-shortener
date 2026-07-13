@@ -18,11 +18,11 @@ build-bin:
 
 .PHONY: lint
 lint:
-	@golangci-lint run ./...
+	@go fmt ./... && golangci-lint run ./...
 
 .PHONY: check
 check:
-	golangci-lint run ./... && go test -tags fts5 ./...
+	@go fmt ./... && golangci-lint run ./... && go test -tags fts5 ./...
 
 .PHONY: dev
 dev:
