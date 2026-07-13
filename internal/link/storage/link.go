@@ -17,6 +17,7 @@ type LinkStorage interface {
 	RemoveLink(ctx context.Context, userId int, code string) error
 	SearchLink(ctx context.Context, userId int, query string) ([]model.Link, error)
 	GetAndClick(ctx context.Context, code string) (string, error)
+	GetLinkByCode(ctx context.Context, code string, userId int) (model.Link, error)
 }
 
 type Link struct {
@@ -88,6 +89,16 @@ func (r *Link) RemoveLink(ctx context.Context, userId int, code string) error {
 		return sql.ErrNoRows
 	}
 	return nil
+}
+
+func (r *Link) GetLinkByCode(ctx context.Context, code string, userId int) (model.Link, error) {
+	var link model.Link
+	err := r.db.QueryRowContext(ctx, "SELECT id, code, url, clicks, created_at FROM link_link WHERE code=? AND user_id=?", code, userId).
+		Scan(&link.Id, &link.Code, &link.Url, &link.Clicks, &link.CreatedAt)
+	if err != nil {
+		return model.Link{}, err
+	}
+	return link, nil
 }
 
 func (r *Link) GetAndClick(ctx context.Context, code string) (string, error) {

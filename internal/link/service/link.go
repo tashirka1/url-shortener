@@ -14,6 +14,7 @@ type LinkService interface {
 	RemoveLink(ctx context.Context, userId int, code string) error
 	SearchLink(ctx context.Context, userId int, query string) ([]model.Link, error)
 	GetAndClick(ctx context.Context, code string) (string, error)
+	GetLinkByCode(ctx context.Context, code string, userId int) (model.Link, error)
 }
 
 type Link struct {
@@ -51,6 +52,15 @@ func (s *Link) RemoveLink(ctx context.Context, userId int, code string) error {
 	}
 	slog.InfoContext(ctx, "link removed", "user_id", userId, "code", code)
 	return nil
+}
+
+func (s *Link) GetLinkByCode(ctx context.Context, code string, userId int) (model.Link, error) {
+	link, err := s.r.GetLinkByCode(ctx, code, userId)
+	if err != nil {
+		slog.WarnContext(ctx, "get link by code failed", "code", code, "user_id", userId, "error", err)
+		return model.Link{}, fmt.Errorf("get link by code: %w", err)
+	}
+	return link, nil
 }
 
 func (s *Link) GetAndClick(ctx context.Context, code string) (string, error) {

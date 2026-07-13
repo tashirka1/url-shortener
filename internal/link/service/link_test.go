@@ -12,11 +12,12 @@ import (
 )
 
 type mockLinkStorage struct {
-	createLinkFunc  func(ctx context.Context, url string, userId int) (model.Link, error)
-	listLinkFunc    func(ctx context.Context, userId, cursor int) ([]model.Link, error)
-	removeLinkFunc  func(ctx context.Context, userId int, code string) error
-	searchLinkFunc  func(ctx context.Context, userId int, query string) ([]model.Link, error)
-	getAndClickFunc func(ctx context.Context, code string) (string, error)
+	createLinkFunc    func(ctx context.Context, url string, userId int) (model.Link, error)
+	listLinkFunc      func(ctx context.Context, userId, cursor int) ([]model.Link, error)
+	removeLinkFunc    func(ctx context.Context, userId int, code string) error
+	searchLinkFunc    func(ctx context.Context, userId int, query string) ([]model.Link, error)
+	getAndClickFunc   func(ctx context.Context, code string) (string, error)
+	getLinkByCodeFunc func(ctx context.Context, code string, userId int) (model.Link, error)
 }
 
 func (m *mockLinkStorage) CreateLink(ctx context.Context, url string, userId int) (model.Link, error) {
@@ -52,6 +53,13 @@ func (m *mockLinkStorage) GetAndClick(ctx context.Context, code string) (string,
 		return m.getAndClickFunc(ctx, code)
 	}
 	return "", errors.New("GetAndClick not implemented")
+}
+
+func (m *mockLinkStorage) GetLinkByCode(ctx context.Context, code string, userId int) (model.Link, error) {
+	if m.getLinkByCodeFunc != nil {
+		return m.getLinkByCodeFunc(ctx, code, userId)
+	}
+	return model.Link{}, errors.New("GetLinkByCode not implemented")
 }
 
 var _ storage.LinkStorage = (*mockLinkStorage)(nil)

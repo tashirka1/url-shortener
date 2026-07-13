@@ -2,6 +2,7 @@ package handler
 
 import (
 	"database/sql"
+	"encoding/base64"
 	"errors"
 	"log/slog"
 	"math"
@@ -17,6 +18,7 @@ import (
 	"url_shortener/internal/link/view"
 
 	"github.com/labstack/echo/v4"
+	qrcode "github.com/skip2/go-qrcode"
 )
 
 type Link struct {
@@ -151,6 +153,26 @@ func (h *Link) SearchLink(c echo.Context) error {
 	return core_view.RenderTemplate(c, view.SearchResults(links))
 }
 
+func (h *Link) GetQRCode(c echo.Context) error {
+	userId := session.GetUserId(c)
+	code := c.Param("code")
+
+	link, err := h.s.GetLinkByCode(c.Request().Context(), code, userId)
+	if err != nil {
+		slog.Warn("qr code: link not found", "code", code, "user_id", userId, "error", err)
+		return echo.NewHTTPError(http.StatusNotFound, "Ссылка не найдена")
+	}
+
+	png, err := qrcode.Encode(link.Url, qrcode.Medium, 256)
+	if err != nil {
+		slog.Error("qr encode failed", "error", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Ошибка генерации QR")
+	}
+
+	dataURI := "data:image/png;base64," + base64.StdEncoding.EncodeToString(png)
+	return core_view.RenderTemplate(c, view.QRCodeModal(link.Code, dataURI))
+}
+
 func (h *Link) Main(c echo.Context) error {
 	userId := session.GetUserId(c)
 	return core_view.RenderTemplate(c, view.Main(userId))
@@ -165,6 +187,7 @@ func SetupHandlers(e *echo.Echo, s service.LinkService) {
 	group.POST("/create-link", h.PostCreateLink)
 	group.GET("/list-link", h.ListLink)
 	group.GET("/search-link", h.SearchLink)
+	group.GET("/:code/qr", h.GetQRCode)
 	group.DELETE("/remove-link/:code", h.RemoveLink)
 	e.GET("/:code", h.RedirectLink)
 	e.GET("/", h.Main)

@@ -6,6 +6,19 @@ import (
 	"url_shortener/internal/link/model"
 )
 
+templ QRCodeModal(code string, dataURI string) {
+	<dialog open id="qr-modal" style="padding: 20px; max-width: 350px;" hx-on:click="if(event.target===this)this.removeAttribute('open')">
+		<article style="margin: 0; text-align: center;">
+			<header>
+				<strong>QR-код</strong>
+				<a href="#" style="float: right;" hx-on:click="document.getElementById('qr-modal').removeAttribute('open'); return false;">✕</a>
+			</header>
+			<img src={ templ.SafeURL(dataURI) } alt="QR code for { code }" style="display: block; margin: 0 auto;"/>
+			<p><small>{ "/" + code }</small></p>
+		</article>
+	</dialog>
+}
+
 templ CreateLinkError(err string) {
 	<div>{ err }</div>
 }
@@ -48,6 +61,7 @@ templ CreateLink(userId int, links []model.Link) {
 							<th scope="col">Короткая ссылка</th>
 							<th scope="col">Ссылка</th>
 							<th scope="col">Переходы</th>
+							<th scope="col">QR</th>
 							<th scope="col">Удалить</th>
 						</tr>
 					</thead>
@@ -56,6 +70,7 @@ templ CreateLink(userId int, links []model.Link) {
 					</tbody>
 				</table>
 			</article>
+			<div id="qr-modal-container"></div>
 		</div>
 	}
 }
@@ -69,6 +84,11 @@ templ Link(link model.Link) {
 			<a href={ templ.URL(link.Url) } target="_blank">{ link.Url }</a>
 		</td>
 		<td>{ fmt.Sprintf("%d", link.Clicks) }</td>
+		<td>
+			<button hx-get={ string(templ.URL(fmt.Sprintf("/link/%s/qr", link.Code))) } hx-target="#qr-modal-container" hx-swap="innerHTML">
+				QR
+			</button>
+		</td>
 		<td>
 			<button hx-delete={ string(templ.URL(fmt.Sprintf("/link/remove-link/%s", link.Code))) } hx-target="closest tr" hx-swap="outerHTML">
 				Удалить
@@ -86,6 +106,11 @@ templ LastLink(link model.Link) {
 			<a href={ templ.URL(link.Url) } target="_blank">{ link.Url }</a>
 		</td>
 		<td>{ fmt.Sprintf("%d", link.Clicks) }</td>
+		<td>
+			<button hx-get={ string(templ.URL(fmt.Sprintf("/link/%s/qr", link.Code))) } hx-target="#qr-modal-container" hx-swap="innerHTML">
+				QR
+			</button>
+		</td>
 		<td>
 			<button hx-delete={ string(templ.URL(fmt.Sprintf("/link/remove-link/%s", link.Code))) } hx-target="closest tr" hx-swap="outerHTML">
 				Удалить
