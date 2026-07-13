@@ -153,6 +153,43 @@ func (h *Link) SearchLink(c echo.Context) error {
 	return core_view.RenderTemplate(c, view.SearchResults(links))
 }
 
+func (h *Link) GetCodeDisplay(c echo.Context) error {
+	userId := session.GetUserId(c)
+	code := c.Param("code")
+
+	_, err := h.s.GetLinkByCode(c.Request().Context(), code, userId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "Ссылка не найдена")
+	}
+
+	return core_view.RenderTemplate(c, view.CodeDisplay(code))
+}
+
+func (h *Link) GetEditForm(c echo.Context) error {
+	userId := session.GetUserId(c)
+	currentCode := c.Param("code")
+
+	link, err := h.s.GetLinkByCode(c.Request().Context(), currentCode, userId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "Ссылка не найдена")
+	}
+
+	return core_view.RenderTemplate(c, view.CodeEditField(link.Code, ""))
+}
+
+func (h *Link) UpdateAlias(c echo.Context) error {
+	userId := session.GetUserId(c)
+	currentCode := c.Param("code")
+	newCode := c.FormValue("code")
+
+	err := h.s.UpdateAlias(c.Request().Context(), userId, currentCode, newCode)
+	if err == nil {
+		return core_view.RenderTemplate(c, view.CodeDisplay(newCode))
+	}
+
+	return core_view.RenderTemplate(c, view.CodeEditField(currentCode, err.Error()))
+}
+
 func (h *Link) GetQRCode(c echo.Context) error {
 	userId := session.GetUserId(c)
 	code := c.Param("code")
@@ -187,6 +224,9 @@ func SetupHandlers(e *echo.Echo, s service.LinkService) {
 	group.POST("/create-link", h.PostCreateLink)
 	group.GET("/list-link", h.ListLink)
 	group.GET("/search-link", h.SearchLink)
+	group.GET("/:code/display", h.GetCodeDisplay)
+	group.GET("/:code/edit-form", h.GetEditForm)
+	group.PATCH("/:code/alias", h.UpdateAlias)
 	group.GET("/:code/qr", h.GetQRCode)
 	group.DELETE("/remove-link/:code", h.RemoveLink)
 	e.GET("/:code", h.RedirectLink)

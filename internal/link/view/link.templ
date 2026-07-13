@@ -6,6 +6,33 @@ import (
 	"url_shortener/internal/link/model"
 )
 
+templ CodeDisplay(code string) {
+	<td scope="row">
+		<a href={ templ.URL(fmt.Sprintf("/%s", code)) } class="shortLink" target="_blank">{ code }</a>
+		<button class="outline" style="margin-left: 0.5rem;" hx-get={ string(templ.URL(fmt.Sprintf("/link/%s/edit-form", code))) } hx-target="closest td" hx-swap="outerHTML" title="Изменить alias">✏️</button>
+	</td>
+}
+
+templ CodeEditField(code string, errMsg ...string) {
+	<td scope="row">
+		<div style="display: flex; gap: 0.25rem; align-items: center;">
+			<input type="text" name="code" value={ code } hx-patch={ string(templ.URL(fmt.Sprintf("/link/%s/alias", code))) } hx-target="closest td" hx-swap="outerHTML" hx-trigger="keyup[key=='Enter']" required minlength="3" maxlength="32" pattern="[a-zA-Z0-9_-]+" style="margin-bottom: 0; width: auto;"/>
+			<button class="outline" hx-get={ string(templ.URL(fmt.Sprintf("/link/%s/display", code))) } hx-target="closest td" hx-swap="outerHTML" title="Отмена">✕</button>
+		</div>
+		@CodeEditErrors(errMsg)
+	</td>
+}
+
+templ CodeEditErrors(errMsg []string) {
+	for _, err := range errMsg {
+		<small style="color: red; display: block;">{ err }</small>
+	}
+}
+
+templ AliasError(err string) {
+	<small style="color: red;">{ err }</small>
+}
+
 templ QRCodeModal(code string, dataURI string) {
 	<dialog open id="qr-modal" style="padding: 20px; max-width: 350px;" hx-on:click="if(event.target===this)this.removeAttribute('open')">
 		<article style="margin: 0; text-align: center;">
@@ -77,9 +104,7 @@ templ CreateLink(userId int, links []model.Link) {
 
 templ Link(link model.Link) {
 	<tr>
-		<td scope="row">
-			<a href={ templ.URL(fmt.Sprintf("/%s", link.Code)) } class="shortLink" target="_blank">{ link.Code }</a>
-		</td>
+		@CodeDisplay(link.Code)
 		<td>
 			<a href={ templ.URL(link.Url) } target="_blank">{ link.Url }</a>
 		</td>
@@ -99,9 +124,7 @@ templ Link(link model.Link) {
 
 templ LastLink(link model.Link) {
 	<tr hx-get={ string(templ.URL(fmt.Sprintf("/link/list-link?cursor=%d", link.Id))) } hx-trigger="revealed" hx-swap="beforeend" hx-target="#list-links">
-		<td scope="row">
-			<a href={ templ.URL(fmt.Sprintf("/%s", link.Code)) } class="shortLink" target="_blank">{ link.Code }</a>
-		</td>
+		@CodeDisplay(link.Code)
 		<td>
 			<a href={ templ.URL(link.Url) } target="_blank">{ link.Url }</a>
 		</td>

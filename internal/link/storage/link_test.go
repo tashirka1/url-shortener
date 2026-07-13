@@ -198,6 +198,66 @@ func TestSearchLink_NoResults(t *testing.T) {
 	assert.Empty(t, links)
 }
 
+func TestUpdateAlias_Success(t *testing.T) {
+	db := setupDB(t)
+	r := NewLink(db)
+	userId := addUser(t, db)
+	insertLink(t, db, "abc123", "https://example.com", userId)
+
+	err := r.UpdateAlias(context.Background(), userId, "abc123", "my-link")
+
+	assert.NoError(t, err)
+	var code string
+	require.NoError(t, db.QueryRow("SELECT code FROM link_link WHERE user_id=?", userId).Scan(&code))
+	assert.Equal(t, "my-link", code)
+}
+
+func TestUpdateAlias_AlreadyTaken(t *testing.T) {
+	db := setupDB(t)
+	r := NewLink(db)
+	user1 := addUser(t, db)
+	user2 := addUser(t, db)
+	insertLink(t, db, "abc123", "https://a.com", user1)
+	insertLink(t, db, "def456", "https://b.com", user2)
+
+	err := r.UpdateAlias(context.Background(), user1, "abc123", "def456")
+
+	assert.ErrorIs(t, err, model.ErrAliasTaken)
+}
+
+func TestUpdateAlias_NotFound(t *testing.T) {
+	db := setupDB(t)
+	r := NewLink(db)
+	userId := addUser(t, db)
+
+	err := r.UpdateAlias(context.Background(), userId, "missing", "new-code")
+
+	assert.ErrorIs(t, err, sql.ErrNoRows)
+}
+
+func TestUpdateAlias_WrongUser(t *testing.T) {
+	db := setupDB(t)
+	r := NewLink(db)
+	user1 := addUser(t, db)
+	user2 := addUser(t, db)
+	insertLink(t, db, "abc123", "https://a.com", user1)
+
+	err := r.UpdateAlias(context.Background(), user2, "abc123", "my-link")
+
+	assert.ErrorIs(t, err, sql.ErrNoRows)
+}
+
+func TestUpdateAlias_SameCode(t *testing.T) {
+	db := setupDB(t)
+	r := NewLink(db)
+	userId := addUser(t, db)
+	insertLink(t, db, "abc123", "https://example.com", userId)
+
+	err := r.UpdateAlias(context.Background(), userId, "abc123", "abc123")
+
+	assert.NoError(t, err)
+}
+
 func TestSearchLink_OtherUser(t *testing.T) {
 	db := setupDB(t)
 	r := NewLink(db)

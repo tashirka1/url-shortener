@@ -15,6 +15,7 @@ type LinkService interface {
 	SearchLink(ctx context.Context, userId int, query string) ([]model.Link, error)
 	GetAndClick(ctx context.Context, code string) (string, error)
 	GetLinkByCode(ctx context.Context, code string, userId int) (model.Link, error)
+	UpdateAlias(ctx context.Context, userID int, currentCode, newCode string) error
 }
 
 type Link struct {
@@ -61,6 +62,30 @@ func (s *Link) GetLinkByCode(ctx context.Context, code string, userId int) (mode
 		return model.Link{}, fmt.Errorf("get link by code: %w", err)
 	}
 	return link, nil
+}
+
+func (s *Link) UpdateAlias(ctx context.Context, userID int, currentCode, newCode string) error {
+	if newCode == "" {
+		return fmt.Errorf("alias is required")
+	}
+	if len(newCode) < 3 || len(newCode) > 32 {
+		return fmt.Errorf("alias должен быть от 3 до 32 символов")
+	}
+	for _, r := range newCode {
+		if (r < 'a' || r > 'z') && (r < 'A' || r > 'Z') && (r < '0' || r > '9') && r != '-' && r != '_' {
+			return fmt.Errorf("alias может содержать только латинские буквы, цифры, дефис и подчёркивание")
+		}
+	}
+	reserved := map[string]bool{"health": true, "auth": true, "link": true, "rps": true, "static": true}
+	if reserved[newCode] {
+		return fmt.Errorf("этот alias зарезервирован системой")
+	}
+	if err := s.r.UpdateAlias(ctx, userID, currentCode, newCode); err != nil {
+		slog.ErrorContext(ctx, "update alias failed", "user_id", userID, "current_code", currentCode, "new_code", newCode, "error", err)
+		return fmt.Errorf("update alias: %w", err)
+	}
+	slog.InfoContext(ctx, "alias updated", "user_id", userID, "current_code", currentCode, "new_code", newCode)
+	return nil
 }
 
 func (s *Link) GetAndClick(ctx context.Context, code string) (string, error) {

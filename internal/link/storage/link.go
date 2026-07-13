@@ -18,6 +18,7 @@ type LinkStorage interface {
 	SearchLink(ctx context.Context, userId int, query string) ([]model.Link, error)
 	GetAndClick(ctx context.Context, code string) (string, error)
 	GetLinkByCode(ctx context.Context, code string, userId int) (model.Link, error)
+	UpdateAlias(ctx context.Context, userID int, currentCode, newCode string) error
 }
 
 type Link struct {
@@ -142,6 +143,31 @@ func ftsQuery(query string) string {
 		b.WriteByte('*')
 	}
 	return b.String()
+}
+
+func (r *Link) UpdateAlias(ctx context.Context, userID int, currentCode, newCode string) error {
+	if currentCode == newCode {
+		return nil
+	}
+	var count int
+	if err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM link_link WHERE code=?", newCode).Scan(&count); err != nil {
+		return err
+	}
+	if count > 0 {
+		return model.ErrAliasTaken
+	}
+	res, err := r.db.ExecContext(ctx, "UPDATE link_link SET code=? WHERE code=? AND user_id=?", newCode, currentCode, userID)
+	if err != nil {
+		return err
+	}
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("rows affected: %w", err)
+	}
+	if rows == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 func (r *Link) SearchLink(ctx context.Context, userId int, query string) ([]model.Link, error) {

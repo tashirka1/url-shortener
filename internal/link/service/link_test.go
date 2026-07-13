@@ -18,6 +18,7 @@ type mockLinkStorage struct {
 	searchLinkFunc    func(ctx context.Context, userId int, query string) ([]model.Link, error)
 	getAndClickFunc   func(ctx context.Context, code string) (string, error)
 	getLinkByCodeFunc func(ctx context.Context, code string, userId int) (model.Link, error)
+	updateAliasFunc   func(ctx context.Context, userID int, currentCode, newCode string) error
 }
 
 func (m *mockLinkStorage) CreateLink(ctx context.Context, url string, userId int) (model.Link, error) {
@@ -60,6 +61,13 @@ func (m *mockLinkStorage) GetLinkByCode(ctx context.Context, code string, userId
 		return m.getLinkByCodeFunc(ctx, code, userId)
 	}
 	return model.Link{}, errors.New("GetLinkByCode not implemented")
+}
+
+func (m *mockLinkStorage) UpdateAlias(ctx context.Context, userID int, currentCode, newCode string) error {
+	if m.updateAliasFunc != nil {
+		return m.updateAliasFunc(ctx, userID, currentCode, newCode)
+	}
+	return errors.New("UpdateAlias not implemented")
 }
 
 var _ storage.LinkStorage = (*mockLinkStorage)(nil)
@@ -187,6 +195,100 @@ func TestSearchLink_NoResults(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Empty(t, links)
+}
+
+func TestUpdateAlias_SameCode(t *testing.T) {
+	mock := &mockLinkStorage{
+		updateAliasFunc: func(ctx context.Context, userID int, currentCode, newCode string) error {
+			return nil
+		},
+	}
+	s := NewLink(mock)
+
+	err := s.UpdateAlias(context.Background(), 1, "abc", "abc")
+
+	assert.NoError(t, err)
+}
+
+func TestUpdateAlias_Success(t *testing.T) {
+	mock := &mockLinkStorage{
+		updateAliasFunc: func(ctx context.Context, userID int, currentCode, newCode string) error {
+			assert.Equal(t, "my-link", newCode)
+			return nil
+		},
+	}
+	s := NewLink(mock)
+
+	err := s.UpdateAlias(context.Background(), 1, "abc123", "my-link")
+
+	assert.NoError(t, err)
+}
+
+func TestUpdateAlias_TooShort(t *testing.T) {
+	s := NewLink(nil)
+
+	err := s.UpdateAlias(context.Background(), 1, "abc", "ab")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "от 3 до 32")
+}
+
+func TestUpdateAlias_TooLong(t *testing.T) {
+	s := NewLink(nil)
+
+	long := string(make([]byte, 33))
+	for i := range long {
+		long = long[:i] + "a" + long[i+1:]
+	}
+	err := s.UpdateAlias(context.Background(), 1, "abc", long)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "от 3 до 32")
+}
+
+func TestUpdateAlias_InvalidChars(t *testing.T) {
+	s := NewLink(nil)
+
+	err := s.UpdateAlias(context.Background(), 1, "abc", "my link!")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "только латинские буквы")
+}
+
+func TestUpdateAlias_ReservedWord(t *testing.T) {
+	s := NewLink(nil)
+
+	err := s.UpdateAlias(context.Background(), 1, "abc", "health")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "зарезервирован")
+}
+
+func TestUpdateAlias_AliasTaken(t *testing.T) {
+	mock := &mockLinkStorage{
+		updateAliasFunc: func(ctx context.Context, userID int, currentCode, newCode string) error {
+			return model.ErrAliasTaken
+		},
+	}
+	s := NewLink(mock)
+
+	err := s.UpdateAlias(context.Background(), 1, "abc", "taken")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "alias already taken")
+}
+
+func TestUpdateAlias_NotFound(t *testing.T) {
+	mock := &mockLinkStorage{
+		updateAliasFunc: func(ctx context.Context, userID int, currentCode, newCode string) error {
+			return errors.New("not found")
+		},
+	}
+	s := NewLink(mock)
+
+	err := s.UpdateAlias(context.Background(), 1, "missing", "new-code")
+
+	assert.Error(t, err)
 }
 
 func TestSearchLink_StorageError(t *testing.T) {
