@@ -8,8 +8,10 @@ import (
 
 templ CodeDisplay(code string) {
 	<td scope="row">
-		<a href={ templ.URL(fmt.Sprintf("/%s", code)) } class="shortLink" target="_blank">{ code }</a>
-		<button class="outline" style="margin-left: 0.5rem;" hx-get={ string(templ.URL(fmt.Sprintf("/link/%s/edit-form", code))) } hx-target="closest td" hx-swap="outerHTML" title="Изменить alias">✏️</button>
+		<div style="display: flex; gap: 0.25rem; align-items: center;">
+			<a href={ templ.URL(fmt.Sprintf("/%s", code)) } class="shortLink" target="_blank">{ code }</a>
+			<button class="outline" style="margin: 0;" hx-get={ string(templ.URL(fmt.Sprintf("/link/%s/edit-form", code))) } hx-target="closest td" hx-swap="outerHTML" title="Изменить alias">✏️</button>
+		</div>
 	</td>
 }
 
