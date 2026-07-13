@@ -24,6 +24,6 @@ lint:
 check:
 	golangci-lint run ./... && go test -tags fts5 ./...
 
-.PHONY: air
-air:
+.PHONY: dev
+dev:
 	@go tool air

@@ -5,7 +5,7 @@
 Development
 ```bash
 cp env-example .env
-make air   # with autoreload
+make dev   # with autoreload
 ```
 
 Production Docker

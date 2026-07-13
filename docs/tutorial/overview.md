@@ -156,7 +156,7 @@ cp env-example .env
 
 2. Запусти через `air` (с автоперезагрузкой):
 ```bash
-make air
+make dev
 ```
 
 Или собери вручную:

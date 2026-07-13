@@ -27,7 +27,7 @@ Self-hosted URL shortener. Users register, create short links, share them, and t
 ## Build Commands
 - `make build-bin` — `go tool templ generate && go build -tags fts5 -ldflags="-s -w" -o bin/url-shortener cmd/url-shortener/main.go`
 - `make check` — `golangci-lint run ./... && go test -tags fts5 ./...`
-- `make air` — live-reload with air
+- `make dev` — live-reload with air
 - `make up/down` — Docker Compose orchestration
 
 ## Directory Structure
