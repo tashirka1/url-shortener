@@ -1,15 +1,20 @@
 package view
 
-import (
-	"fmt"
-	"url_shortener/internal/link/model"
-)
+import "url_shortener/internal/link/model"
 
 type ChartBar struct {
 	Day    string
 	Label  string
-	Height string
 	Clicks int
+	Height float64
+	Y      float64
+	X      int
+}
+
+type ChartData struct {
+	Bars     []ChartBar
+	SvgWidth int
+	HasData  bool
 }
 
 func referrerName(ref string) string {
@@ -19,9 +24,9 @@ func referrerName(ref string) string {
 	return ref
 }
 
-func chartBars(daily []model.DailyClick, maxHeight float64) []ChartBar {
+func buildChart(daily []model.DailyClick) ChartData {
 	if len(daily) == 0 {
-		return nil
+		return ChartData{HasData: false}
 	}
 	max := 0
 	for _, d := range daily {
@@ -32,18 +37,22 @@ func chartBars(daily []model.DailyClick, maxHeight float64) []ChartBar {
 	if max == 0 {
 		max = 1
 	}
+	barH := 180.0
 	bars := make([]ChartBar, len(daily))
 	for i, d := range daily {
 		label := d.Day
 		if len(d.Day) >= 5 {
 			label = d.Day[5:]
 		}
+		h := float64(d.Clicks) / float64(max) * barH
 		bars[i] = ChartBar{
 			Day:    d.Day,
 			Label:  label,
 			Clicks: d.Clicks,
-			Height: fmt.Sprintf("%.0f", float64(d.Clicks)/float64(max)*maxHeight),
+			Height: h,
+			Y:      210 - h,
+			X:      10 + i*30,
 		}
 	}
-	return bars
+	return ChartData{Bars: bars, SvgWidth: len(daily)*30 + 40, HasData: true}
 }

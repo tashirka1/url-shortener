@@ -16,28 +16,28 @@ templ StatsPage(link model.Link, daily []model.DailyClick, referrers []model.Ref
 			<p>
 				<code>/{ link.Code }</code> → <a href={ templ.URL(link.Url) } target="_blank">{ link.Url }</a>
 			</p>
-			@ClickChart(chartBars(daily, 180))
+			@ClickChart(buildChart(daily))
 			@ReferrerTable(referrers)
 		</article>
 	}
 }
 
-templ ClickChart(bars []ChartBar) {
-	if len(bars) == 0 {
+templ ClickChart(cd ChartData) {
+	if !cd.HasData {
 		<p>Нет переходов за последние 30 дней</p>
 	}
-	if len(bars) > 0 {
+	if cd.HasData {
 		<figure>
 			<figcaption>Клики по дням</figcaption>
-			<div style="display: flex; align-items: flex-end; gap: 2px; height: 200px; border-bottom: 1px solid var(--pico-muted-border-color); padding-top: 1rem; overflow-x: auto;">
-				for _, b := range bars {
-					<div style="flex: 1 0 30px; display: flex; flex-direction: column; align-items: center; height: 200px; justify-content: flex-end;">
-						<small style="font-size: 9px; margin-bottom: 2px; color: var(--pico-color);">{ fmt.Sprintf("%d", b.Clicks) }</small>
-						<div style="width: 100%; height: { b.Height }px; background: var(--pico-primary); border-radius: 3px 3px 0 0; min-height: 1px;"></div>
-						<span style="font-size: 8px; white-space: nowrap; margin-top: 2px; color: var(--pico-muted-color);">{ b.Label }</span>
-					</div>
+			<svg viewBox={ fmt.Sprintf("0 0 %d 230", cd.SvgWidth) } xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: 230px;">
+				for _, b := range cd.Bars {
+					<rect x={ fmt.Sprintf("%d", b.X) } y={ fmt.Sprintf("%.0f", b.Y) } width="22" height={ fmt.Sprintf("%.0f", b.Height) } fill="#3b82f6" rx="2"/>
+					<text x={ fmt.Sprintf("%d", b.X+11) } y={ fmt.Sprintf("%.0f", b.Y-4) } text-anchor="middle" font-size="9" fill="#555">{ fmt.Sprintf("%d", b.Clicks) }</text>
 				}
-			</div>
+				for _, b := range cd.Bars {
+					<text x={ fmt.Sprintf("%d", b.X+11) } y="218" text-anchor="middle" font-size="9" fill="#888">{ b.Label }</text>
+				}
+			</svg>
 		</figure>
 	}
 }
