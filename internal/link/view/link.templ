@@ -10,7 +10,12 @@ templ CodeDisplay(code string) {
 	<td scope="row">
 		<div style="display: flex; gap: 0.25rem; align-items: center;">
 			<a href={ templ.URL(fmt.Sprintf("/%s", code)) } class="shortLink" target="_blank">{ code }</a>
-			<button class="outline" style="margin: 0;" hx-get={ string(templ.URL(fmt.Sprintf("/link/%s/edit-form", code))) } hx-target="closest td" hx-swap="outerHTML" title="Изменить alias">✏️</button>
+			<button class="outline" style="margin: 0;" hx-get={ string(templ.URL(fmt.Sprintf("/link/%s/edit-form", code))) } hx-target="closest td" hx-swap="outerHTML" hx-indicator="this" title="Изменить alias">
+				<span>✏️</span>
+				<span class="htmx-indicator" aria-hidden="true">
+					<svg class="spinner" viewBox="0 0 24 24" width="16" height="16" style="display:block"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="3" stroke-dasharray="31.4 31.4" stroke-linecap="round"/></svg>
+				</span>
+			</button>
 		</div>
 	</td>
 }

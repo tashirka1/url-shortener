@@ -44,6 +44,18 @@ footer {
     opacity: 1;
 }
 
+button.htmx-request > span:first-child {
+	display: none;
+}
+
+@keyframes spin {
+	to { transform: rotate(360deg); }
+}
+
+button .spinner {
+	animation: spin 0.8s linear infinite;
+}
+
 @keyframes loading-slide {
     0% {
         transform: translateX(-100%);
