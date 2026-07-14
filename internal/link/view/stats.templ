@@ -6,8 +6,8 @@ import (
 	"url_shortener/internal/link/model"
 )
 
-templ StatsPage(link model.Link, daily []model.DailyClick, referrers []model.ReferrerStat) {
-	@view.Base("Статистика — URL shortener", 0) {
+templ StatsPage(userId int, link model.Link, daily []model.DailyClick, referrers []model.ReferrerStat) {
+	@view.Base("Статистика — URL shortener", userId) {
 		<a href="/link/">← Назад к ссылкам</a>
 		<article>
 			<header>

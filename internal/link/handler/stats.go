@@ -39,5 +39,5 @@ func (h *Link) Stats(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Ошибка загрузки статистики")
 	}
 
-	return core_view.RenderTemplate(c, view.StatsPage(link, daily, referrers))
+	return core_view.RenderTemplate(c, view.StatsPage(userId, link, daily, referrers))
 }
