@@ -70,7 +70,7 @@ func TestLogin_Success(t *testing.T) {
 	err = handler.PostLogin(c)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, rec.Code)
-	assert.Contains(t, rec.Header().Get("HX-Redirect"), "/link/create-link")
+	assert.Contains(t, rec.Header().Get("HX-Redirect"), "/link/")
 }
 
 func TestLogin_InvalidPassword(t *testing.T) {

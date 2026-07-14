@@ -80,7 +80,7 @@ func (h *User) PostLogin(c echo.Context) error {
 
 	slog.Info("user logged in", "user_id", user.Id, "email", email)
 	session.SetUserId(c, user.Id)
-	c.Response().Header().Set("HX-Redirect", "/link/create-link")
+	c.Response().Header().Set("HX-Redirect", "/link/")
 
 	return nil
 }

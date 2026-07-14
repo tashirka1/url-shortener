@@ -8,7 +8,7 @@ import (
 
 templ StatsPage(link model.Link, daily []model.DailyClick, referrers []model.ReferrerStat) {
 	@view.Base("Статистика — URL shortener", 0) {
-		<a href="/link/create-link">← Назад к ссылкам</a>
+		<a href="/link/">← Назад к ссылкам</a>
 		<article>
 			<header>
 				<strong>Статистика переходов</strong>

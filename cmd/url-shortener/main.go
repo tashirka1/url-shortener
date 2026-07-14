@@ -84,7 +84,7 @@ func Run() error {
 	e.Use(middleware.ContextTimeout(10 * time.Second))
 	e.Use(middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
 		Skipper: func(c echo.Context) bool {
-			return c.Request().Method != http.MethodPost && c.Path() != "/link/create-link"
+			return c.Request().Method != http.MethodPost && c.Path() != "/link/" && c.Path() != "/link"
 		},
 		Store: middleware.NewRateLimiterMemoryStore(3),
 	}))
