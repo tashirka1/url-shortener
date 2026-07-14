@@ -13,17 +13,18 @@ type LinkService interface {
 	ListLink(ctx context.Context, userId, cursor int) ([]model.Link, error)
 	RemoveLink(ctx context.Context, userId int, code string) error
 	SearchLink(ctx context.Context, userId int, query string) ([]model.Link, error)
-	GetAndClick(ctx context.Context, code string) (string, error)
+	GetAndClick(ctx context.Context, code, referrer, userAgent string) (string, error)
 	GetLinkByCode(ctx context.Context, code string, userId int) (model.Link, error)
 	UpdateAlias(ctx context.Context, userID int, currentCode, newCode string) error
 }
 
 type Link struct {
-	r storage.LinkStorage
+	r  storage.LinkStorage
+	cr storage.ClickStorage
 }
 
-func NewLink(r storage.LinkStorage) *Link {
-	return &Link{r: r}
+func NewLink(r storage.LinkStorage, cr storage.ClickStorage) *Link {
+	return &Link{r: r, cr: cr}
 }
 
 func (s *Link) CreateLink(ctx context.Context, url string, userId int) (model.Link, error) {
@@ -88,13 +89,13 @@ func (s *Link) UpdateAlias(ctx context.Context, userID int, currentCode, newCode
 	return nil
 }
 
-func (s *Link) GetAndClick(ctx context.Context, code string) (string, error) {
-	url, err := s.r.GetAndClick(ctx, code)
+func (s *Link) GetAndClick(ctx context.Context, code, referrer, userAgent string) (string, error) {
+	link, err := s.r.GetAndClick(ctx, code, referrer, userAgent)
 	if err != nil {
 		slog.WarnContext(ctx, "get and click failed", "code", code, "error", err)
 		return "", fmt.Errorf("get and click: %w", err)
 	}
-	return url, nil
+	return link.Url, nil
 }
 
 func (s *Link) SearchLink(ctx context.Context, userId int, query string) ([]model.Link, error) {

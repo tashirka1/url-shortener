@@ -23,7 +23,7 @@ templ CodeDisplay(code string) {
 templ CodeEditField(code string, errMsg ...string) {
 	<td scope="row">
 		<div style="display: flex; gap: 0.25rem; align-items: center;">
-			<input type="text" name="code" value={ code } hx-patch={ string(templ.URL(fmt.Sprintf("/link/%s/alias", code))) } hx-target="closest td" hx-swap="outerHTML" hx-trigger="keyup[key=='Enter']" required minlength="3" maxlength="32" pattern="[a-zA-Z0-9_-]+" style="margin-bottom: 0; width: auto;"/>
+			<input type="text" name="code" value={ code } hx-patch={ string(templ.URL(fmt.Sprintf("/link/%s/alias", code))) } hx-target="closest tr" hx-swap="outerHTML" hx-trigger="keyup[key=='Enter']" required minlength="3" maxlength="32" pattern="[a-zA-Z0-9_-]+" style="margin-bottom: 0; width: auto;"/>
 			<button class="outline" hx-get={ string(templ.URL(fmt.Sprintf("/link/%s/display", code))) } hx-target="closest td" hx-swap="outerHTML" title="Отмена">✕</button>
 		</div>
 		@CodeEditErrors(errMsg)
@@ -95,6 +95,7 @@ templ CreateLink(userId int, links []model.Link) {
 							<th scope="col">Короткая ссылка</th>
 							<th scope="col">Ссылка</th>
 							<th scope="col">Переходы</th>
+							<th scope="col">Статистика</th>
 							<th scope="col">QR</th>
 							<th scope="col">Удалить</th>
 						</tr>
@@ -117,6 +118,9 @@ templ Link(link model.Link) {
 		</td>
 		<td>{ fmt.Sprintf("%d", link.Clicks) }</td>
 		<td>
+			<a href={ templ.URL(fmt.Sprintf("/link/%s/stats", link.Code)) }>Статистика</a>
+		</td>
+		<td>
 			<button hx-get={ string(templ.URL(fmt.Sprintf("/link/%s/qr", link.Code))) } hx-target="#qr-modal-container" hx-swap="innerHTML">
 				QR
 			</button>
@@ -136,6 +140,9 @@ templ LastLink(link model.Link) {
 			<a href={ templ.URL(link.Url) } target="_blank">{ link.Url }</a>
 		</td>
 		<td>{ fmt.Sprintf("%d", link.Clicks) }</td>
+		<td>
+			<a href={ templ.URL(fmt.Sprintf("/link/%s/stats", link.Code)) }>Статистика</a>
+		</td>
 		<td>
 			<button hx-get={ string(templ.URL(fmt.Sprintf("/link/%s/qr", link.Code))) } hx-target="#qr-modal-container" hx-swap="innerHTML">
 				QR

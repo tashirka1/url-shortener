@@ -97,8 +97,10 @@ func Run() error {
 	auth_handler.SetupHandlers(e, authSvc)
 
 	linkStrg := link_storage.NewLink(database)
-	linkSvc := link_service.NewLink(linkStrg)
-	link_handler.SetupHandlers(e, linkSvc)
+	clickStrg := link_storage.NewClick(database)
+	linkSvc := link_service.NewLink(linkStrg, clickStrg)
+	clickSvc := link_service.NewClick(clickStrg)
+	link_handler.SetupHandlers(e, linkSvc, clickSvc)
 
 	rpsStrg := rps_storage.NewRPS(database)
 	rps_handler.NewRPS(rpsStrg).SetupRoutes(e)

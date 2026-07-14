@@ -22,11 +22,12 @@ import (
 )
 
 type Link struct {
-	s service.LinkService
+	s  service.LinkService
+	cs service.ClickService
 }
 
-func NewLink(s service.LinkService) *Link {
-	return &Link{s: s}
+func NewLink(s service.LinkService, cs service.ClickService) *Link {
+	return &Link{s: s, cs: cs}
 }
 
 func validateURL(raw string) (string, error) {
@@ -120,7 +121,8 @@ func (h *Link) RemoveLink(c echo.Context) error {
 
 func (h *Link) RedirectLink(c echo.Context) error {
 	code := c.Param("code")
-	url, err := h.s.GetAndClick(c.Request().Context(), code)
+	ref := c.Request().Referer()
+	url, err := h.s.GetAndClick(c.Request().Context(), code, ref, "")
 	if err != nil {
 		slog.Warn("link not found", "code", code, "error", err.Error())
 		return echo.NewHTTPError(http.StatusNotFound, "Ссылка не найдена")
@@ -182,12 +184,16 @@ func (h *Link) UpdateAlias(c echo.Context) error {
 	currentCode := c.Param("code")
 	newCode := c.FormValue("code")
 
-	err := h.s.UpdateAlias(c.Request().Context(), userId, currentCode, newCode)
-	if err == nil {
-		return core_view.RenderTemplate(c, view.CodeDisplay(newCode))
+	if err := h.s.UpdateAlias(c.Request().Context(), userId, currentCode, newCode); err != nil {
+		return core_view.RenderTemplate(c, view.CodeEditField(currentCode, err.Error()))
 	}
 
-	return core_view.RenderTemplate(c, view.CodeEditField(currentCode, err.Error()))
+	link, err := h.s.GetLinkByCode(c.Request().Context(), newCode, userId)
+	if err != nil {
+		slog.Error("update alias: failed to fetch updated link", "code", newCode, "user_id", userId, "error", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Ошибка обновления")
+	}
+	return core_view.RenderTemplate(c, view.Link(link))
 }
 
 func (h *Link) GetQRCode(c echo.Context) error {
@@ -215,8 +221,8 @@ func (h *Link) Main(c echo.Context) error {
 	return core_view.RenderTemplate(c, view.Main(userId))
 }
 
-func SetupHandlers(e *echo.Echo, s service.LinkService) {
-	h := NewLink(s)
+func SetupHandlers(e *echo.Echo, s service.LinkService, cs service.ClickService) {
+	h := NewLink(s, cs)
 
 	group := e.Group("/link")
 	group.Use(session.AuthMiddleware)
@@ -228,6 +234,7 @@ func SetupHandlers(e *echo.Echo, s service.LinkService) {
 	group.GET("/:code/edit-form", h.GetEditForm)
 	group.PATCH("/:code/alias", h.UpdateAlias)
 	group.GET("/:code/qr", h.GetQRCode)
+	group.GET("/:code/stats", h.Stats)
 	group.DELETE("/remove-link/:code", h.RemoveLink)
 	e.GET("/:code", h.RedirectLink)
 	e.GET("/", h.Main)

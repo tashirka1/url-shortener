@@ -16,7 +16,7 @@ type LinkStorage interface {
 	ListLink(ctx context.Context, userId, cursor int) ([]model.Link, error)
 	RemoveLink(ctx context.Context, userId int, code string) error
 	SearchLink(ctx context.Context, userId int, query string) ([]model.Link, error)
-	GetAndClick(ctx context.Context, code string) (string, error)
+	GetAndClick(ctx context.Context, code string, referrer, userAgent string) (model.Link, error)
 	GetLinkByCode(ctx context.Context, code string, userId int) (model.Link, error)
 	UpdateAlias(ctx context.Context, userID int, currentCode, newCode string) error
 }
@@ -102,25 +102,30 @@ func (r *Link) GetLinkByCode(ctx context.Context, code string, userId int) (mode
 	return link, nil
 }
 
-func (r *Link) GetAndClick(ctx context.Context, code string) (string, error) {
+func (r *Link) GetAndClick(ctx context.Context, code string, referrer, userAgent string) (model.Link, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
-		return "", err
+		return model.Link{}, err
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	row := tx.QueryRowContext(ctx, "SELECT url FROM link_link WHERE code=?", code)
-	var url string
-	if scanErr := row.Scan(&url); scanErr != nil {
-		return "", scanErr
+	row := tx.QueryRowContext(ctx, "SELECT id, url FROM link_link WHERE code=?", code)
+	var link model.Link
+	if scanErr := row.Scan(&link.Id, &link.Url); scanErr != nil {
+		return model.Link{}, scanErr
 	}
 
 	_, err = tx.ExecContext(ctx, "UPDATE link_link SET clicks=clicks+1 WHERE code=?", code)
 	if err != nil {
-		return "", err
+		return model.Link{}, err
 	}
 
-	return url, tx.Commit()
+	_, err = tx.ExecContext(ctx, "INSERT INTO link_click(link_id, referrer, user_agent) VALUES (?, ?, ?)", link.Id, referrer, userAgent)
+	if err != nil {
+		return model.Link{}, err
+	}
+
+	return link, tx.Commit()
 }
 
 func ftsQuery(query string) string {

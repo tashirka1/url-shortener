@@ -1,0 +1,72 @@
+package view
+
+import (
+	"fmt"
+	"url_shortener/internal/core/view"
+	"url_shortener/internal/link/model"
+)
+
+templ StatsPage(link model.Link, daily []model.DailyClick, referrers []model.ReferrerStat) {
+	@view.Base("Статистика — URL shortener", 0) {
+		<a href="/link/create-link">← Назад к ссылкам</a>
+		<article>
+			<header>
+				<strong>Статистика переходов</strong>
+			</header>
+			<p>
+				<code>/{ link.Code }</code> → <a href={ templ.URL(link.Url) } target="_blank">{ link.Url }</a>
+			</p>
+			@ClickChart(chartBars(daily, 180))
+			@ReferrerTable(referrers)
+		</article>
+	}
+}
+
+templ ClickChart(bars []ChartBar) {
+	if len(bars) == 0 {
+		<p>Нет переходов за последние 30 дней</p>
+	}
+	if len(bars) > 0 {
+		<figure>
+			<figcaption>Клики по дням</figcaption>
+			<div style="display: flex; align-items: flex-end; gap: 2px; height: 200px; border-bottom: 1px solid var(--pico-muted-border-color); padding-top: 1rem; overflow-x: auto;">
+				for _, b := range bars {
+					<div style="flex: 1 0 30px; display: flex; flex-direction: column; align-items: center; height: 200px; justify-content: flex-end;">
+						<small style="font-size: 9px; margin-bottom: 2px; color: var(--pico-color);">{ fmt.Sprintf("%d", b.Clicks) }</small>
+						<div style="width: 100%; height: { b.Height }px; background: var(--pico-primary); border-radius: 3px 3px 0 0; min-height: 1px;"></div>
+						<span style="font-size: 8px; white-space: nowrap; margin-top: 2px; color: var(--pico-muted-color);">{ b.Label }</span>
+					</div>
+				}
+			</div>
+		</figure>
+	}
+}
+
+templ ReferrerTable(referrers []model.ReferrerStat) {
+	<figure>
+		<figcaption>Источники переходов</figcaption>
+		<table>
+			<thead>
+				<tr>
+					<th scope="col">Источник</th>
+					<th scope="col">Переходы</th>
+				</tr>
+			</thead>
+			<tbody>
+				if len(referrers) == 0 {
+					<tr>
+						<td colspan="2">Нет данных</td>
+					</tr>
+				}
+				if len(referrers) > 0 {
+					for _, r := range referrers {
+						<tr>
+							<td>{ referrerName(r.Referrer) }</td>
+							<td>{ fmt.Sprintf("%d", r.Clicks) }</td>
+						</tr>
+					}
+				}
+			</tbody>
+		</table>
+	</figure>
+}

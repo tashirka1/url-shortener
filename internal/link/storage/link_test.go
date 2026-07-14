@@ -158,20 +158,24 @@ func TestGetAndClick_Success(t *testing.T) {
 
 	insertLink(t, db, "c1", "https://example.com", userId)
 
-	url, err := r.GetAndClick(context.Background(), "c1")
+	link, err := r.GetAndClick(context.Background(), "c1", "", "")
 	assert.NoError(t, err)
-	assert.Equal(t, "https://example.com", url)
+	assert.Equal(t, "https://example.com", link.Url)
 
 	var clicks int
 	require.NoError(t, db.QueryRow("SELECT clicks FROM link_link WHERE code=?", "c1").Scan(&clicks))
 	assert.Equal(t, 1, clicks)
+
+	var clickCount int
+	require.NoError(t, db.QueryRow("SELECT COUNT(*) FROM link_click WHERE link_id=?", link.Id).Scan(&clickCount))
+	assert.Equal(t, 1, clickCount)
 }
 
 func TestGetAndClick_NotFound(t *testing.T) {
 	db := setupDB(t)
 	r := NewLink(db)
 
-	_, err := r.GetAndClick(context.Background(), "missing")
+	_, err := r.GetAndClick(context.Background(), "missing", "", "")
 	assert.ErrorIs(t, err, sql.ErrNoRows)
 }
 

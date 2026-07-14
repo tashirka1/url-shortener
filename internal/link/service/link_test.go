@@ -16,7 +16,7 @@ type mockLinkStorage struct {
 	listLinkFunc      func(ctx context.Context, userId, cursor int) ([]model.Link, error)
 	removeLinkFunc    func(ctx context.Context, userId int, code string) error
 	searchLinkFunc    func(ctx context.Context, userId int, query string) ([]model.Link, error)
-	getAndClickFunc   func(ctx context.Context, code string) (string, error)
+	getAndClickFunc   func(ctx context.Context, code, referrer, userAgent string) (model.Link, error)
 	getLinkByCodeFunc func(ctx context.Context, code string, userId int) (model.Link, error)
 	updateAliasFunc   func(ctx context.Context, userID int, currentCode, newCode string) error
 }
@@ -49,11 +49,11 @@ func (m *mockLinkStorage) SearchLink(ctx context.Context, userId int, query stri
 	return nil, errors.New("SearchLink not implemented")
 }
 
-func (m *mockLinkStorage) GetAndClick(ctx context.Context, code string) (string, error) {
+func (m *mockLinkStorage) GetAndClick(ctx context.Context, code, referrer, userAgent string) (model.Link, error) {
 	if m.getAndClickFunc != nil {
-		return m.getAndClickFunc(ctx, code)
+		return m.getAndClickFunc(ctx, code, referrer, userAgent)
 	}
-	return "", errors.New("GetAndClick not implemented")
+	return model.Link{}, errors.New("GetAndClick not implemented")
 }
 
 func (m *mockLinkStorage) GetLinkByCode(ctx context.Context, code string, userId int) (model.Link, error) {
@@ -70,7 +70,27 @@ func (m *mockLinkStorage) UpdateAlias(ctx context.Context, userID int, currentCo
 	return errors.New("UpdateAlias not implemented")
 }
 
+type mockClickStorage struct {
+	getDailyClicksFunc  func(ctx context.Context, linkID int64, days int) ([]model.DailyClick, error)
+	getTopReferrersFunc func(ctx context.Context, linkID int64, limit int) ([]model.ReferrerStat, error)
+}
+
+func (m *mockClickStorage) GetDailyClicks(ctx context.Context, linkID int64, days int) ([]model.DailyClick, error) {
+	if m.getDailyClicksFunc != nil {
+		return m.getDailyClicksFunc(ctx, linkID, days)
+	}
+	return nil, errors.New("GetDailyClicks not implemented")
+}
+
+func (m *mockClickStorage) GetTopReferrers(ctx context.Context, linkID int64, limit int) ([]model.ReferrerStat, error) {
+	if m.getTopReferrersFunc != nil {
+		return m.getTopReferrersFunc(ctx, linkID, limit)
+	}
+	return nil, errors.New("GetTopReferrers not implemented")
+}
+
 var _ storage.LinkStorage = (*mockLinkStorage)(nil)
+var _ storage.ClickStorage = (*mockClickStorage)(nil)
 
 func TestCreateLink_Success(t *testing.T) {
 	mock := &mockLinkStorage{
@@ -78,7 +98,7 @@ func TestCreateLink_Success(t *testing.T) {
 			return model.Link{Id: 1, Code: "abc123", Url: url}, nil
 		},
 	}
-	s := NewLink(mock)
+	s := NewLink(mock, &mockClickStorage{})
 
 	link, err := s.CreateLink(context.Background(), "https://example.com", 1)
 
@@ -94,7 +114,7 @@ func TestCreateLink_StorageError(t *testing.T) {
 			return model.Link{}, errors.New("db error")
 		},
 	}
-	s := NewLink(mock)
+	s := NewLink(mock, &mockClickStorage{})
 
 	_, err := s.CreateLink(context.Background(), "https://example.com", 1)
 
@@ -114,7 +134,7 @@ func TestListLink_Success(t *testing.T) {
 			return expected, nil
 		},
 	}
-	s := NewLink(mock)
+	s := NewLink(mock, &mockClickStorage{})
 
 	links, err := s.ListLink(context.Background(), 1, 999)
 
@@ -128,7 +148,7 @@ func TestListLink_Empty(t *testing.T) {
 			return []model.Link{}, nil
 		},
 	}
-	s := NewLink(mock)
+	s := NewLink(mock, &mockClickStorage{})
 
 	links, err := s.ListLink(context.Background(), 1, 0)
 
@@ -144,7 +164,7 @@ func TestRemoveLink_Success(t *testing.T) {
 			return nil
 		},
 	}
-	s := NewLink(mock)
+	s := NewLink(mock, &mockClickStorage{})
 
 	err := s.RemoveLink(context.Background(), 1, "abc")
 
@@ -157,7 +177,7 @@ func TestRemoveLink_NotFound(t *testing.T) {
 			return errors.New("no rows in result set")
 		},
 	}
-	s := NewLink(mock)
+	s := NewLink(mock, &mockClickStorage{})
 
 	err := s.RemoveLink(context.Background(), 1, "missing")
 
@@ -175,7 +195,7 @@ func TestSearchLink_Success(t *testing.T) {
 			return expected, nil
 		},
 	}
-	s := NewLink(mock)
+	s := NewLink(mock, &mockClickStorage{})
 
 	links, err := s.SearchLink(context.Background(), 1, "example")
 
@@ -189,7 +209,7 @@ func TestSearchLink_NoResults(t *testing.T) {
 			return []model.Link{}, nil
 		},
 	}
-	s := NewLink(mock)
+	s := NewLink(mock, &mockClickStorage{})
 
 	links, err := s.SearchLink(context.Background(), 1, "nonexistent")
 
@@ -203,7 +223,7 @@ func TestUpdateAlias_SameCode(t *testing.T) {
 			return nil
 		},
 	}
-	s := NewLink(mock)
+	s := NewLink(mock, &mockClickStorage{})
 
 	err := s.UpdateAlias(context.Background(), 1, "abc", "abc")
 
@@ -217,7 +237,7 @@ func TestUpdateAlias_Success(t *testing.T) {
 			return nil
 		},
 	}
-	s := NewLink(mock)
+	s := NewLink(mock, &mockClickStorage{})
 
 	err := s.UpdateAlias(context.Background(), 1, "abc123", "my-link")
 
@@ -225,7 +245,7 @@ func TestUpdateAlias_Success(t *testing.T) {
 }
 
 func TestUpdateAlias_TooShort(t *testing.T) {
-	s := NewLink(nil)
+	s := NewLink(nil, nil)
 
 	err := s.UpdateAlias(context.Background(), 1, "abc", "ab")
 
@@ -234,7 +254,7 @@ func TestUpdateAlias_TooShort(t *testing.T) {
 }
 
 func TestUpdateAlias_TooLong(t *testing.T) {
-	s := NewLink(nil)
+	s := NewLink(nil, nil)
 
 	long := string(make([]byte, 33))
 	for i := range long {
@@ -247,7 +267,7 @@ func TestUpdateAlias_TooLong(t *testing.T) {
 }
 
 func TestUpdateAlias_InvalidChars(t *testing.T) {
-	s := NewLink(nil)
+	s := NewLink(nil, nil)
 
 	err := s.UpdateAlias(context.Background(), 1, "abc", "my link!")
 
@@ -256,7 +276,7 @@ func TestUpdateAlias_InvalidChars(t *testing.T) {
 }
 
 func TestUpdateAlias_ReservedWord(t *testing.T) {
-	s := NewLink(nil)
+	s := NewLink(nil, nil)
 
 	err := s.UpdateAlias(context.Background(), 1, "abc", "health")
 
@@ -270,7 +290,7 @@ func TestUpdateAlias_AliasTaken(t *testing.T) {
 			return model.ErrAliasTaken
 		},
 	}
-	s := NewLink(mock)
+	s := NewLink(mock, &mockClickStorage{})
 
 	err := s.UpdateAlias(context.Background(), 1, "abc", "taken")
 
@@ -284,7 +304,7 @@ func TestUpdateAlias_NotFound(t *testing.T) {
 			return errors.New("not found")
 		},
 	}
-	s := NewLink(mock)
+	s := NewLink(mock, &mockClickStorage{})
 
 	err := s.UpdateAlias(context.Background(), 1, "missing", "new-code")
 
@@ -297,10 +317,40 @@ func TestSearchLink_StorageError(t *testing.T) {
 			return nil, errors.New("db error")
 		},
 	}
-	s := NewLink(mock)
+	s := NewLink(mock, &mockClickStorage{})
 
 	_, err := s.SearchLink(context.Background(), 1, "test")
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "db error")
+}
+
+func TestGetAndClick_Success(t *testing.T) {
+	mock := &mockLinkStorage{
+		getAndClickFunc: func(ctx context.Context, code, referrer, userAgent string) (model.Link, error) {
+			assert.Equal(t, "abc", code)
+			assert.Equal(t, "https://google.com", referrer)
+			return model.Link{Id: 1, Url: "https://example.com", Code: "abc"}, nil
+		},
+	}
+	s := NewLink(mock, &mockClickStorage{})
+
+	url, err := s.GetAndClick(context.Background(), "abc", "https://google.com", "")
+
+	assert.NoError(t, err)
+	assert.Equal(t, "https://example.com", url)
+}
+
+func TestGetAndClick_NotFound(t *testing.T) {
+	mock := &mockLinkStorage{
+		getAndClickFunc: func(ctx context.Context, code, referrer, userAgent string) (model.Link, error) {
+			return model.Link{}, errors.New("not found")
+		},
+	}
+	s := NewLink(mock, &mockClickStorage{})
+
+	_, err := s.GetAndClick(context.Background(), "missing", "", "")
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "not found")
 }
