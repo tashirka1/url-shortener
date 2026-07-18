@@ -6,8 +6,8 @@ import (
 	"url_shortener/internal/core/view"
 )
 
-templ TokenPage(userId int, tokens []model.Token, newToken string, newTokenName string) {
-	@view.Base("URL shortener — API-токены", userId) {
+templ TokenPage(userId int, tokens []model.Token) {
+	@view.Base("URL shortener", userId) {
 		<div>
 			<nav>
 				<ul>
@@ -22,18 +22,23 @@ templ TokenPage(userId int, tokens []model.Token, newToken string, newTokenName 
 				@TokenList(tokens)
 			</article>
 
-			if newToken != "" {
-				@TokenDisplay(newToken, newTokenName)
-			}
+			<div id="token-display-container"></div>
 		</div>
 	}
+}
+
+templ TokenListAndDisplay(tokens []model.Token, newToken string, newTokenName string) {
+	@TokenList(tokens)
+	<div hx-swap-oob="true" id="token-display-container">
+		@TokenDisplay(newToken, newTokenName)
+	</div>
 }
 
 templ TokenForm() {
 	<form hx-post="/link/tokens" hx-target="#token-list" hx-swap="outerHTML">
 		<fieldset role="group">
 			<input type="text" name="name" placeholder="Название токена (например, CI/CD)" required maxlength="128"/>
-			<button>Создать токен</button>
+			<button>Создать</button>
 		</fieldset>
 		<div id="token-errors" style="color:red; margin-bottom: 10px;"></div>
 	</form>
@@ -96,7 +101,7 @@ templ TokenDisplay(token string, name string) {
 			<p>Скопируйте токен сейчас — он больше не будет показан.</p>
 			<fieldset role="group">
 				<input type="text" id="token-value" value={ token } readonly style="font-family: monospace;"/>
-				<button onclick="navigator.clipboard.writeText(document.getElementById('token-value').value); this.textContent='Скопировано!';">Копировать</button>
+				<button class="copy-token">Копировать</button>
 			</fieldset>
 			<small style="color: red;">Если вы потеряете токен, его придётся отозвать и создать новый.</small>
 		</article>

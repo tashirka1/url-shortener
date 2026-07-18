@@ -31,7 +31,7 @@ func (h *Token) Index(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Внутренняя ошибка")
 	}
 
-	return core_view.RenderTemplate(c, view.TokenPage(userID, tokens, "", ""))
+	return core_view.RenderTemplate(c, view.TokenPage(userID, tokens))
 }
 
 func (h *Token) Generate(c echo.Context) error {
@@ -62,7 +62,7 @@ func (h *Token) Generate(c echo.Context) error {
 
 	c.Response().Header().Set("HX-Trigger", "reset-token-form")
 
-	return core_view.RenderTemplate(c, view.TokenPage(userID, tokens, rawToken, token.Name))
+	return core_view.RenderTemplate(c, view.TokenListAndDisplay(tokens, rawToken, token.Name))
 }
 
 func (h *Token) Revoke(c echo.Context) error {
@@ -71,7 +71,7 @@ func (h *Token) Revoke(c echo.Context) error {
 
 	tokenID, err := strconv.ParseInt(tokenIDStr, 10, 64)
 	if err != nil {
-		return c.NoContent(http.StatusOK)
+		return echo.NewHTTPError(http.StatusBadRequest, "неверный ID токена")
 	}
 
 	ctx := c.Request().Context()

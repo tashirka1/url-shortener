@@ -12,8 +12,10 @@ CREATE TABLE api_token(
 );
 CREATE UNIQUE INDEX idx_api_token_hash ON api_token(token_hash);
 CREATE INDEX idx_api_token_user_id ON api_token(user_id, created_at DESC);
+CREATE INDEX idx_api_token_user_revoked ON api_token(user_id, revoked_at, created_at DESC);
 
 -- +goose Down
+DROP INDEX idx_api_token_user_revoked;
 DROP INDEX idx_api_token_user_id;
 DROP INDEX idx_api_token_hash;
 DROP TABLE api_token;

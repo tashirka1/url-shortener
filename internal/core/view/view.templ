@@ -11,6 +11,7 @@ templ Nav(title string, userId int) {
 		</ul>
 		<ul>
 			if userId != 0 {
+				<li><a href="/link/tokens">Токены</a></li>
 				<li><a href="/auth/logout">Выйти</a></li>
 			} else {
 				<li><a href="/auth/register">Регистрация</a></li>

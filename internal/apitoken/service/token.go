@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log/slog"
-	"math/big"
 	"time"
 
 	"url_shortener/internal/apitoken/model"
@@ -37,13 +36,13 @@ func NewToken(r storage.TokenStorage) *Token {
 }
 
 func (s *Token) Generate(ctx context.Context, userID int, name string) (model.Token, string, error) {
+	b := make([]byte, tokenBytes)
+	if _, err := rand.Read(b); err != nil {
+		return model.Token{}, "", fmt.Errorf("generate token: %w", err)
+	}
 	raw := make([]byte, tokenBytes)
-	for i := range raw {
-		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(tokenCharset))))
-		if err != nil {
-			return model.Token{}, "", fmt.Errorf("generate token: %w", err)
-		}
-		raw[i] = tokenCharset[n.Int64()]
+	for i, r := range b {
+		raw[i] = tokenCharset[int(r)%len(tokenCharset)]
 	}
 
 	fullToken := tokenPrefix + string(raw)

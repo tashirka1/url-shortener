@@ -79,7 +79,7 @@ func TestGenerate_Success(t *testing.T) {
 	assert.Equal(t, "sk_", raw[:3])
 }
 
-func TestGenerate_EmptyName(t *testing.T) {
+func TestGenerate_WithEmptyName(t *testing.T) {
 	mock := &mockTokenStorage{
 		insertFunc: func(ctx context.Context, userID int, name, tokenHash, prefix string) (model.Token, error) {
 			return model.Token{ID: 1}, nil

@@ -29,6 +29,9 @@ func (m *AuthMiddleware) Middleware(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 
 		rawToken, ok := strings.CutPrefix(header, "Bearer ")
+		if !ok {
+			rawToken, ok = strings.CutPrefix(header, "bearer ")
+		}
 		if !ok || rawToken == "" {
 			return c.JSON(http.StatusUnauthorized, map[string]string{"error": "invalid authorization header"})
 		}
