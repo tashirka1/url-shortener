@@ -1,0 +1,104 @@
+package view
+
+import (
+	"fmt"
+	"url_shortener/internal/apitoken/model"
+	"url_shortener/internal/core/view"
+)
+
+templ TokenPage(userId int, tokens []model.Token, newToken string, newTokenName string) {
+	@view.Base("URL shortener — API-токены", userId) {
+		<div>
+			<nav>
+				<ul>
+					<li><a href="/link/">&larr; К ссылкам</a></li>
+				</ul>
+			</nav>
+
+			<article>
+				<header><strong>API-токены</strong></header>
+				<p><small>Токены позволяют работать со ссылками через API. Созданный токен показывается только один раз — скопируйте его сразу.</small></p>
+				@TokenForm()
+				@TokenList(tokens)
+			</article>
+
+			if newToken != "" {
+				@TokenDisplay(newToken, newTokenName)
+			}
+		</div>
+	}
+}
+
+templ TokenForm() {
+	<form hx-post="/link/tokens" hx-target="#token-list" hx-swap="outerHTML">
+		<fieldset role="group">
+			<input type="text" name="name" placeholder="Название токена (например, CI/CD)" required maxlength="128"/>
+			<button>Создать токен</button>
+		</fieldset>
+		<div id="token-errors" style="color:red; margin-bottom: 10px;"></div>
+	</form>
+}
+
+templ TokenList(tokens []model.Token) {
+	<div id="token-list">
+		if len(tokens) == 0 {
+			<p>Нет активных токенов</p>
+		} else {
+			<figure>
+				<table>
+					<thead>
+						<tr>
+							<th scope="col">Название</th>
+							<th scope="col">Префикс</th>
+							<th scope="col">Создан</th>
+							<th scope="col">Последнее использование</th>
+							<th scope="col">Действия</th>
+						</tr>
+					</thead>
+					<tbody>
+						for _, t := range tokens {
+							@TokenRow(t)
+						}
+					</tbody>
+				</table>
+			</figure>
+		}
+	</div>
+}
+
+templ TokenRow(t model.Token) {
+	<tr>
+		<td>{ t.Name }</td>
+		<td><code>{ t.Prefix }...</code></td>
+		<td>{ t.CreatedAt.Format("02.01.2006 15:04") }</td>
+		<td>
+			if t.LastUsedAt != nil {
+				{ t.LastUsedAt.Format("02.01.2006 15:04") }
+			} else {
+				<small style="color: gray;">не использовался</small>
+			}
+		</td>
+		<td>
+			<button class="outline secondary" hx-delete={ templ.URL(fmt.Sprintf("/link/tokens/%d", t.ID)) } hx-target="closest tr" hx-swap="outerHTML" hx-confirm="Отозвать токен «{ t.Name }»?">
+				Отозвать
+			</button>
+		</td>
+	</tr>
+}
+
+templ TokenDisplay(token string, name string) {
+	<dialog open id="token-display" style="padding: 20px; max-width: 500px;" hx-on:click="if(event.target===this)this.removeAttribute('open')">
+		<article style="margin: 0;">
+			<header>
+				<strong>Токен «{ name }» создан</strong>
+				<a href="#" style="float: right;" hx-on:click="document.getElementById('token-display').removeAttribute('open'); return false;">✕</a>
+			</header>
+			<p>Скопируйте токен сейчас — он больше не будет показан.</p>
+			<fieldset role="group">
+				<input type="text" id="token-value" value={ token } readonly style="font-family: monospace;"/>
+				<button onclick="navigator.clipboard.writeText(document.getElementById('token-value').value); this.textContent='Скопировано!';">Копировать</button>
+			</fieldset>
+			<small style="color: red;">Если вы потеряете токен, его придётся отозвать и создать новый.</small>
+		</article>
+	</dialog>
+}
