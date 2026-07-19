@@ -84,7 +84,7 @@ templ TokenRow(t model.Token) {
 			}
 		</td>
 		<td>
-			<button class="outline secondary" hx-delete={ templ.URL(fmt.Sprintf("/link/tokens/%d", t.ID)) } hx-target="closest tr" hx-swap="outerHTML" hx-confirm="Отозвать токен «{ t.Name }»?">
+			<button class="outline secondary" hx-delete={ templ.URL(fmt.Sprintf("/link/tokens/%d", t.ID)) } hx-target="closest tr" hx-swap="outerHTML" hx-confirm={ fmt.Sprintf("Отозвать токен «%s»?", t.Name) }>
 				Отозвать
 			</button>
 		</td>
