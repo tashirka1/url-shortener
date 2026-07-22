@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"url_shortener/internal/core/api"
+	"url_shortener/internal/apitoken/middleware"
 	"url_shortener/internal/link/model"
 	"url_shortener/internal/link/service"
 
@@ -22,6 +22,13 @@ type LinkAPI struct {
 
 func NewLinkAPI(s service.LinkService, cs service.ClickService) *LinkAPI {
 	return &LinkAPI{s: s, cs: cs}
+}
+
+func (h *LinkAPI) SetupAPIRoutes(g *echo.Group) {
+	g.POST("/link", h.PostCreateLink)
+	g.GET("/link", h.ListLink)
+	g.DELETE("/link/:code", h.DeleteLink)
+	g.GET("/link/:code/stats", h.GetStats)
 }
 
 type createLinkRequest struct {
@@ -73,7 +80,7 @@ type referrerItem struct {
 }
 
 func (h *LinkAPI) PostCreateLink(c echo.Context) error {
-	userID := api.GetUserID(c)
+	userID := middleware.GetUserID(c)
 	ctx := c.Request().Context()
 
 	var req createLinkRequest
@@ -107,7 +114,7 @@ func (h *LinkAPI) PostCreateLink(c echo.Context) error {
 }
 
 func (h *LinkAPI) ListLink(c echo.Context) error {
-	userID := api.GetUserID(c)
+	userID := middleware.GetUserID(c)
 	ctx := c.Request().Context()
 
 	cursorStr := c.QueryParam("cursor")
@@ -140,7 +147,7 @@ func (h *LinkAPI) ListLink(c echo.Context) error {
 }
 
 func (h *LinkAPI) DeleteLink(c echo.Context) error {
-	userID := api.GetUserID(c)
+	userID := middleware.GetUserID(c)
 	code := c.Param("code")
 
 	err := h.s.RemoveLink(c.Request().Context(), userID, code)
@@ -156,7 +163,7 @@ func (h *LinkAPI) DeleteLink(c echo.Context) error {
 }
 
 func (h *LinkAPI) GetStats(c echo.Context) error {
-	userID := api.GetUserID(c)
+	userID := middleware.GetUserID(c)
 	code := c.Param("code")
 	ctx := c.Request().Context()
 

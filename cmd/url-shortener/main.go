@@ -13,12 +13,12 @@ import (
 	"url_shortener"
 
 	apitoken_handler "url_shortener/internal/apitoken/handler"
+	apitoken_middleware "url_shortener/internal/apitoken/middleware"
 	apitoken_service "url_shortener/internal/apitoken/service"
 	apitoken_storage "url_shortener/internal/apitoken/storage"
 	auth_handler "url_shortener/internal/auth/handler"
 	auth_service "url_shortener/internal/auth/service"
 	auth_storage "url_shortener/internal/auth/storage"
-	"url_shortener/internal/core/api"
 	"url_shortener/internal/core/db"
 	"url_shortener/internal/core/health"
 	link_handler "url_shortener/internal/link/handler"
@@ -110,14 +110,10 @@ func Run() error {
 	tokenSvc := apitoken_service.NewToken(tokenStrg)
 	apitoken_handler.SetupHandlers(e, tokenSvc)
 
-	apiAuth := api.NewAuthMiddleware(tokenSvc)
+	apiAuth := apitoken_middleware.NewAuthMiddleware(tokenSvc)
 	apiGroup := e.Group("/api/v1")
 	apiGroup.Use(apiAuth.Middleware)
-	apiHandler := link_handler.NewLinkAPI(linkSvc, clickSvc)
-	apiGroup.POST("/link", apiHandler.PostCreateLink)
-	apiGroup.GET("/link", apiHandler.ListLink)
-	apiGroup.DELETE("/link/:code", apiHandler.DeleteLink)
-	apiGroup.GET("/link/:code/stats", apiHandler.GetStats)
+	link_handler.NewLinkAPI(linkSvc, clickSvc).SetupAPIRoutes(apiGroup)
 
 	rpsStrg := rps_storage.NewRPS(database)
 	rps_handler.NewRPS(rpsStrg).SetupRoutes(e)
