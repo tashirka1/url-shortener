@@ -22,9 +22,36 @@ templ TokenPage(userId int, tokens []model.Token) {
 				@TokenList(tokens)
 			</article>
 
+			@ApiExamples("<YOUR_TOKEN>")
+
 			<div id="token-display-container"></div>
 		</div>
 	}
+}
+
+templ ApiExamples(tokenExample string) {
+	<details style="margin-top: 1rem;">
+		<summary><strong>Примеры вызова API</strong></summary>
+		<p><small>Замените <code>YOUR_DOMAIN</code> на адрес вашего сервера.</small></p>
+		<figure>
+			<table>
+				<thead>
+					<tr>
+						<th scope="col">Описание</th>
+						<th scope="col">Команда</th>
+					</tr>
+				</thead>
+				<tbody>
+					for _, ex := range apiExamples(tokenExample) {
+						<tr>
+							<td>{ ex.Desc }</td>
+							<td><pre><code>{ ex.Cmd }</code></pre></td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		</figure>
+	</details>
 }
 
 templ TokenListAndDisplay(tokens []model.Token, newToken string, newTokenName string) {
@@ -92,7 +119,7 @@ templ TokenRow(t model.Token) {
 }
 
 templ TokenDisplay(token string, name string) {
-	<dialog open id="token-display" style="padding: 20px; max-width: 500px;" hx-on:click="if(event.target===this)this.removeAttribute('open')">
+	<dialog open id="token-display" style="padding: 20px; max-width: 650px;" hx-on:click="if(event.target===this)this.removeAttribute('open')">
 		<article style="margin: 0;">
 			<header>
 				<strong>Токен «{ name }» создан</strong>
@@ -104,6 +131,7 @@ templ TokenDisplay(token string, name string) {
 				<button class="copy-token">Копировать</button>
 			</fieldset>
 			<small style="color: red;">Если вы потеряете токен, его придётся отозвать и создать новый.</small>
+			@ApiExamples(token)
 		</article>
 	</dialog>
 }
