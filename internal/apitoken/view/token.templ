@@ -62,7 +62,7 @@ templ TokenListAndDisplay(tokens []model.Token, newToken string, newTokenName st
 }
 
 templ TokenForm() {
-	<form hx-post="/link/tokens" hx-target="#token-list" hx-swap="outerHTML">
+	<form hx-post="/link/tokens" hx-target="#token-list" hx-swap="outerHTML" hx-on:reset-token-form="this.reset()">
 		<fieldset role="group">
 			<input type="text" name="name" placeholder="Название токена (например, CI/CD)" required maxlength="128"/>
 			<button>Создать</button>
