@@ -38,10 +38,14 @@ func (h *Token) Generate(c echo.Context) error {
 	userID := session.GetUserId(c)
 	name := c.FormValue("name")
 
-	if name == "" {
+	if name == "" || len(name) > 128 {
 		c.Response().Header().Set("HX-Retarget", "#token-errors")
 		c.Response().Header().Set("HX-Reswap", "innerHTML")
-		return c.HTML(http.StatusBadRequest, "Название токена обязательно")
+		msg := "Название токена обязательно"
+		if len(name) > 128 {
+			msg = "Название токена не может быть длиннее 128 символов"
+		}
+		return c.HTML(http.StatusBadRequest, msg)
 	}
 
 	ctx := c.Request().Context()
@@ -78,6 +82,7 @@ func (h *Token) Revoke(c echo.Context) error {
 
 	if err := h.s.Revoke(ctx, userID, tokenID); err != nil {
 		slog.WarnContext(ctx, "token revoke failed", "user_id", userID, "token_id", tokenID, "error", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Ошибка отзыва токена")
 	}
 	return c.NoContent(http.StatusOK)
 }

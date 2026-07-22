@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log/slog"
+	"math/big"
 	"time"
 
 	"url_shortener/internal/apitoken/model"
@@ -14,10 +15,11 @@ import (
 )
 
 const (
-	tokenPrefix   = "sk_"
-	tokenBytes    = 32
-	tokenCharset  = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	prefixShowLen = 8
+	tokenPrefix    = "sk_"
+	tokenBytes     = 32
+	tokenBase62Len = 44
+	tokenCharset   = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	prefixShowLen  = 8
 )
 
 type TokenService interface {
@@ -40,9 +42,16 @@ func (s *Token) Generate(ctx context.Context, userID int, name string) (model.To
 	if _, err := rand.Read(b); err != nil {
 		return model.Token{}, "", fmt.Errorf("generate token: %w", err)
 	}
-	raw := make([]byte, tokenBytes)
-	for i, r := range b {
-		raw[i] = tokenCharset[int(r)%len(tokenCharset)]
+
+	var n big.Int
+	n.SetBytes(b)
+	var base big.Int
+	base.SetInt64(int64(len(tokenCharset)))
+	raw := make([]byte, tokenBase62Len)
+	var rem big.Int
+	for i := tokenBase62Len - 1; i >= 0; i-- {
+		n.DivMod(&n, &base, &rem)
+		raw[i] = tokenCharset[rem.Int64()]
 	}
 
 	fullToken := tokenPrefix + string(raw)

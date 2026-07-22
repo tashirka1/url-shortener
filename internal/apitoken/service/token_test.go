@@ -75,7 +75,7 @@ func TestGenerate_Success(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), token.ID)
 	assert.Equal(t, "ci-cd", token.Name)
-	assert.Len(t, raw, 3+32) // "sk_" + 32 base62 chars
+	assert.Len(t, raw, 3+tokenBase62Len) // "sk_" + 44 base62 chars
 	assert.Equal(t, "sk_", raw[:3])
 }
 

@@ -43,7 +43,12 @@ func (r *Link) CreateLink(ctx context.Context, url string, userId int) (model.Li
 		return model.Link{}, fmt.Errorf("rows affected: %w", err)
 	}
 	if rows == 0 {
-		return model.Link{}, model.ErrLinkAlreadyExists
+		var existing model.Link
+		if scanErr := r.db.QueryRowContext(ctx, "SELECT id, code, url, clicks, created_at FROM link_link WHERE user_id=? AND url=?", userId, url).
+			Scan(&existing.Id, &existing.Code, &existing.Url, &existing.Clicks, &existing.CreatedAt); scanErr != nil {
+			return model.Link{}, fmt.Errorf("find existing link: %w", scanErr)
+		}
+		return existing, model.ErrLinkAlreadyExists
 	}
 	id, err := row.LastInsertId()
 	if err != nil {
