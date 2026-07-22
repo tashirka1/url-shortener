@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"errors"
 	"log/slog"
 	"net/http"
 	"strconv"
 
+	"url_shortener/internal/apitoken/model"
 	"url_shortener/internal/apitoken/service"
 	"url_shortener/internal/apitoken/view"
 	"url_shortener/internal/core/session"
@@ -45,7 +47,7 @@ func (h *Token) Generate(c echo.Context) error {
 		if len(name) > 128 {
 			msg = "Название токена не может быть длиннее 128 символов"
 		}
-		return c.HTML(http.StatusBadRequest, msg)
+		return c.HTML(http.StatusBadRequest, "<span>"+msg+"</span>")
 	}
 
 	ctx := c.Request().Context()
@@ -82,6 +84,9 @@ func (h *Token) Revoke(c echo.Context) error {
 
 	if err := h.s.Revoke(ctx, userID, tokenID); err != nil {
 		slog.WarnContext(ctx, "token revoke failed", "user_id", userID, "token_id", tokenID, "error", err)
+		if errors.Is(err, model.ErrTokenNotFound) {
+			return echo.NewHTTPError(http.StatusNotFound, "Токен не найден")
+		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "Ошибка отзыва токена")
 	}
 	return c.NoContent(http.StatusOK)

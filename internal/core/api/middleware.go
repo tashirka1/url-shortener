@@ -11,7 +11,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-const UserIDKey = "userId"
+const UserIDKey = "apiUserId"
 
 type AuthMiddleware struct {
 	s service.TokenService

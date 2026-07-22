@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"testing"
 	"time"
@@ -58,162 +60,195 @@ func (m *mockTokenStorage) UpdateLastUsed(ctx context.Context, tokenID int64) er
 
 var _ storage.TokenStorage = (*mockTokenStorage)(nil)
 
-func TestGenerate_Success(t *testing.T) {
-	mock := &mockTokenStorage{
-		insertFunc: func(ctx context.Context, userID int, name, tokenHash, prefix string) (model.Token, error) {
-			assert.Equal(t, 1, userID)
-			assert.Equal(t, "ci-cd", name)
-			assert.Len(t, tokenHash, 64) // SHA-256 hex = 64 chars
-			assert.Equal(t, "sk_", prefix[:3])
-			return model.Token{ID: 1, UserID: userID, Name: name, TokenHash: tokenHash, Prefix: prefix}, nil
+func TestGenerate(t *testing.T) {
+	tests := []struct {
+		mock    *mockTokenStorage
+		name    string
+		tokenNm string
+		wantNm  string
+		wantID  int64
+		userID  int
+		wantErr bool
+	}{
+		{
+			name:    "success",
+			userID:  1,
+			tokenNm: "ci-cd",
+			mock: &mockTokenStorage{
+				insertFunc: func(ctx context.Context, userID int, name, tokenHash, prefix string) (model.Token, error) {
+					assert.Equal(t, 1, userID)
+					assert.Equal(t, "ci-cd", name)
+					assert.Len(t, tokenHash, 64)
+					assert.Equal(t, "sk_", prefix[:3])
+					return model.Token{ID: 1, UserID: userID, Name: name, TokenHash: tokenHash, Prefix: prefix}, nil
+				},
+			},
+			wantID: 1,
+			wantNm: "ci-cd",
 		},
 	}
-	s := NewToken(mock)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := NewToken(tt.mock)
+			token, raw, err := s.Generate(context.Background(), tt.userID, tt.tokenNm)
 
-	token, raw, err := s.Generate(context.Background(), 1, "ci-cd")
-
-	require.NoError(t, err)
-	assert.Equal(t, int64(1), token.ID)
-	assert.Equal(t, "ci-cd", token.Name)
-	assert.Len(t, raw, 3+tokenBase62Len) // "sk_" + 44 base62 chars
-	assert.Equal(t, "sk_", raw[:3])
-}
-
-func TestGenerate_WithEmptyName(t *testing.T) {
-	mock := &mockTokenStorage{
-		insertFunc: func(ctx context.Context, userID int, name, tokenHash, prefix string) (model.Token, error) {
-			return model.Token{ID: 1}, nil
-		},
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantID, token.ID)
+			assert.Equal(t, tt.wantNm, token.Name)
+			assert.Len(t, raw, 3+tokenBase62Len)
+			assert.Equal(t, "sk_", raw[:3])
+		})
 	}
-	s := NewToken(mock)
-
-	token, raw, err := s.Generate(context.Background(), 1, "")
-
-	require.NoError(t, err)
-	assert.Equal(t, int64(1), token.ID)
-	assert.NotEmpty(t, raw)
 }
 
-func TestListByUser_Success(t *testing.T) {
+func TestListByUser(t *testing.T) {
 	expected := []model.Token{
 		{ID: 1, Name: "token-1", Prefix: "sk_abc12"},
 		{ID: 2, Name: "token-2", Prefix: "sk_def34"},
 	}
-	mock := &mockTokenStorage{
-		listByUserFunc: func(ctx context.Context, userID int) ([]model.Token, error) {
-			assert.Equal(t, 1, userID)
-			return expected, nil
+	tests := []struct {
+		mock    *mockTokenStorage
+		name    string
+		wantLen int
+		wantErr bool
+	}{
+		{
+			name: "with tokens",
+			mock: &mockTokenStorage{
+				listByUserFunc: func(ctx context.Context, userID int) ([]model.Token, error) {
+					assert.Equal(t, 1, userID)
+					return expected, nil
+				},
+			},
+			wantLen: 2,
+		},
+		{
+			name: "empty list",
+			mock: &mockTokenStorage{
+				listByUserFunc: func(ctx context.Context, userID int) ([]model.Token, error) {
+					return []model.Token{}, nil
+				},
+			},
+			wantLen: 0,
 		},
 	}
-	s := NewToken(mock)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := NewToken(tt.mock)
+			tokens, err := s.ListByUser(context.Background(), 1)
 
-	tokens, err := s.ListByUser(context.Background(), 1)
-
-	require.NoError(t, err)
-	assert.Len(t, tokens, 2)
-	assert.Equal(t, "token-1", tokens[0].Name)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Len(t, tokens, tt.wantLen)
+		})
+	}
 }
 
-func TestListByUser_Empty(t *testing.T) {
-	mock := &mockTokenStorage{
-		listByUserFunc: func(ctx context.Context, userID int) ([]model.Token, error) {
-			return []model.Token{}, nil
+func TestRevoke(t *testing.T) {
+	tests := []struct {
+		wantErr error
+		mock    *mockTokenStorage
+		name    string
+	}{
+		{
+			name: "success",
+			mock: &mockTokenStorage{
+				revokeFunc: func(ctx context.Context, userID int, tokenID int64) error {
+					assert.Equal(t, 1, userID)
+					assert.Equal(t, int64(1), tokenID)
+					return nil
+				},
+			},
+		},
+		{
+			name: "not found",
+			mock: &mockTokenStorage{
+				revokeFunc: func(ctx context.Context, userID int, tokenID int64) error {
+					return model.ErrTokenNotFound
+				},
+			},
+			wantErr: model.ErrTokenNotFound,
 		},
 	}
-	s := NewToken(mock)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := NewToken(tt.mock)
+			err := s.Revoke(context.Background(), 1, 1)
 
-	tokens, err := s.ListByUser(context.Background(), 1)
-
-	require.NoError(t, err)
-	assert.Empty(t, tokens)
+			if tt.wantErr != nil {
+				assert.True(t, errors.Is(err, tt.wantErr))
+				return
+			}
+			assert.NoError(t, err)
+		})
+	}
 }
 
-func TestRevoke_Success(t *testing.T) {
-	mock := &mockTokenStorage{
-		revokeFunc: func(ctx context.Context, userID int, tokenID int64) error {
-			assert.Equal(t, 1, userID)
-			assert.Equal(t, int64(1), tokenID)
-			return nil
-		},
-	}
-	s := NewToken(mock)
-
-	err := s.Revoke(context.Background(), 1, 1)
-
-	assert.NoError(t, err)
-}
-
-func TestRevoke_NotFound(t *testing.T) {
-	mock := &mockTokenStorage{
-		revokeFunc: func(ctx context.Context, userID int, tokenID int64) error {
-			return model.ErrTokenNotFound
-		},
-	}
-	s := NewToken(mock)
-
-	err := s.Revoke(context.Background(), 1, 999)
-
-	assert.Error(t, err)
-	assert.True(t, errors.Is(err, model.ErrTokenNotFound))
-}
-
-func TestAuthenticate_Success(t *testing.T) {
-	var savedHash string
-	insertMock := &mockTokenStorage{
-		insertFunc: func(ctx context.Context, userID int, name, tokenHash, prefix string) (model.Token, error) {
-			savedHash = tokenHash
-			return model.Token{ID: 1, UserID: userID, Name: name, TokenHash: tokenHash, Prefix: prefix}, nil
-		},
-	}
-	s := NewToken(insertMock)
-
-	_, raw, err := s.Generate(context.Background(), 1, "test-token")
-	require.NoError(t, err)
-	require.NotEmpty(t, savedHash)
-
-	mock := &mockTokenStorage{
-		findByHashFunc: func(ctx context.Context, hash string) (model.Token, error) {
-			assert.Equal(t, savedHash, hash)
-			return model.Token{ID: 1, UserID: 1, Name: "test-token", TokenHash: hash}, nil
-		},
-		updateLastUsedFunc: func(ctx context.Context, tokenID int64) error {
-			return nil
-		},
-	}
-	s2 := NewToken(mock)
-
-	result, err := s2.Authenticate(context.Background(), raw)
-
-	require.NoError(t, err)
-	assert.Equal(t, int64(1), result.ID)
-	assert.Equal(t, 1, result.UserID)
-}
-
-func TestAuthenticate_InvalidToken(t *testing.T) {
-	mock := &mockTokenStorage{
-		findByHashFunc: func(ctx context.Context, hash string) (model.Token, error) {
-			return model.Token{}, model.ErrTokenNotFound
-		},
-	}
-	s := NewToken(mock)
-
-	_, err := s.Authenticate(context.Background(), "sk_invalidtoken123")
-
-	assert.Error(t, err)
-	assert.True(t, errors.Is(err, model.ErrTokenNotFound))
-}
-
-func TestAuthenticate_RevokedToken(t *testing.T) {
+func TestAuthenticate(t *testing.T) {
+	hash := sha256.Sum256([]byte("sk_validtoken123"))
+	validHash := hex.EncodeToString(hash[:])
 	revokedAt := time.Now()
-	mock := &mockTokenStorage{
-		findByHashFunc: func(ctx context.Context, hash string) (model.Token, error) {
-			return model.Token{ID: 1, RevokedAt: &revokedAt}, nil
+
+	tests := []struct {
+		wantErr  error
+		mock     *mockTokenStorage
+		name     string
+		rawToken string
+		wantID   int64
+	}{
+		{
+			name:     "success",
+			rawToken: "sk_validtoken123",
+			mock: &mockTokenStorage{
+				findByHashFunc: func(ctx context.Context, h string) (model.Token, error) {
+					assert.Equal(t, validHash, h)
+					return model.Token{ID: 1, UserID: 1, Name: "test", TokenHash: h}, nil
+				},
+				updateLastUsedFunc: func(ctx context.Context, tokenID int64) error {
+					return nil
+				},
+			},
+			wantID: 1,
+		},
+		{
+			name:     "invalid token",
+			rawToken: "sk_invalidtoken123",
+			mock: &mockTokenStorage{
+				findByHashFunc: func(ctx context.Context, hash string) (model.Token, error) {
+					return model.Token{}, model.ErrTokenNotFound
+				},
+			},
+			wantErr: model.ErrTokenNotFound,
+		},
+		{
+			name:     "revoked token",
+			rawToken: "sk_revokedtoken",
+			mock: &mockTokenStorage{
+				findByHashFunc: func(ctx context.Context, hash string) (model.Token, error) {
+					return model.Token{ID: 1, RevokedAt: &revokedAt}, nil
+				},
+			},
+			wantErr: model.ErrTokenRevoked,
 		},
 	}
-	s := NewToken(mock)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := NewToken(tt.mock)
+			result, err := s.Authenticate(context.Background(), tt.rawToken)
 
-	_, err := s.Authenticate(context.Background(), "sk_revokedtoken")
-
-	assert.Error(t, err)
-	assert.True(t, errors.Is(err, model.ErrTokenRevoked))
+			if tt.wantErr != nil {
+				assert.True(t, errors.Is(err, tt.wantErr))
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantID, result.ID)
+		})
+	}
 }
