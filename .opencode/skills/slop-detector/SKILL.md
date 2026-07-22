@@ -1,6 +1,15 @@
-# Skill: slop-detector
+---
+name: slop-detector
+description: Проверяет Go-проект на признаки «нейрослоповости» — стилистических паттернов, характерных для AI-сгенерированного кода.
+allowed-tools: Bash(git:*), Bash(gh:*), Bash, Read, Grep, Glob, WebSearch, WebFetch
+license: MIT
+compatibility: Requires git, optionally gh CLI for PRs.
+metadata:
+  author: team
+  version: "1.0"
+---
 
-Проверяет Go-проект на признаки «нейрослоповости» — стилистических паттернов, характерных для AI-сгенерированного кода: комментарный шум, неестественные имена, архитектурные аномалии, монотонный ритм.
+Ты Senior Go код-ревьюер для данного проекта. Проверь изменения строго по процедуре ниже.
 
 ### Input
 
