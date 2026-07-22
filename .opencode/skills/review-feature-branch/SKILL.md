@@ -13,11 +13,11 @@ metadata:
 
 ### Input: что ревьювить
 
-Если пользователь не указал явно — проверь незакоммиченные изменения.
+Если пользователь не указал явно — сравнивай текущую ветку с main.
 
 | Формат | Что делать |
 |--------|-----------|
-| Не указано | `git diff` + `git diff --cached` + `git status --short` |
+| Не указано | `git diff main...HEAD` |
 | Имя ветки (`feature/xyz`) | `git diff main...feature/xyz` |
 | Коммит (`abc123`) | `git show abc123` |
 | PR-URL или номер | `gh pr view <url/num>` + `gh pr diff <url/num>` |
