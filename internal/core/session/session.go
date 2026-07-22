@@ -57,7 +57,7 @@ func ClearSession(c echo.Context) {
 	_ = sess.Save(c.Request(), c.Response())
 }
 
-func SetUserId(c echo.Context, value int) {
+func SetUserId(c echo.Context, userId int) {
 	sess, err := session.Get(UserSessionsKey, c)
 	if err != nil || sess == nil {
 		slog.Error("session get failed", "error", err)
@@ -70,7 +70,7 @@ func SetUserId(c echo.Context, value int) {
 		Secure:   true,
 		SameSite: http.SameSiteLaxMode,
 	}
-	sess.Values[UserIdKey] = value
+	sess.Values[UserIdKey] = userId
 	if err := sess.Save(c.Request(), c.Response()); err != nil {
 		slog.Error("session save failed", "error", err)
 	}
