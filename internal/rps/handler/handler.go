@@ -78,19 +78,15 @@ func (h *RPS) TemplPageSelectJoinUpdate(c echo.Context) error {
 	}
 
 	ids := make([]int64, len(rows))
-	for i, row := range rows {
-		ids[i] = row.ID
+	for i := range rows {
+		ids[i] = rows[i].ID
+		rows[i].Duration++ // отражает UPDATE, чтобы не делать второй SELECT
 	}
 	if bulkErr := h.storage.BulkUpdateDuration(ctx, ids); bulkErr != nil {
 		return bulkErr
 	}
 
-	updated, err := h.storage.SelectJoin(ctx, limit)
-	if err != nil {
-		return err
-	}
-
-	return core_view.RenderTemplate(c, view.SelectJoinPage(updated))
+	return core_view.RenderTemplate(c, view.SelectJoinPage(rows))
 }
 
 func parseLimit(s string) int {

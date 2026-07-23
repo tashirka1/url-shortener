@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"url_shortener/internal/rps/model"
 )
 
@@ -32,7 +33,7 @@ func (s *RPS) Insert(ctx context.Context, payload string, ts int64, duration int
 func (s *RPS) SelectJoin(ctx context.Context, limit int) ([]model.JoinRow, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT rps_log.id, rps_log.payload, rps_log.ts, rps_log.duration,
-		       COALESCE(rps_meta.key, ''), COALESCE(rps_meta.value, '')
+		       rps_meta.key, rps_meta.value
 		FROM rps_log
 		LEFT JOIN rps_meta ON rps_log.id = rps_meta.log_id
 		ORDER BY rps_log.id DESC
@@ -46,9 +47,12 @@ func (s *RPS) SelectJoin(ctx context.Context, limit int) ([]model.JoinRow, error
 	result := make([]model.JoinRow, 0, limit)
 	for rows.Next() {
 		var r model.JoinRow
-		if err := rows.Scan(&r.ID, &r.Payload, &r.Ts, &r.Duration, &r.MetaKey, &r.MetaValue); err != nil {
+		var mk, mv sql.NullString
+		if err := rows.Scan(&r.ID, &r.Payload, &r.Ts, &r.Duration, &mk, &mv); err != nil {
 			return nil, err
 		}
+		r.MetaKey = mk.String
+		r.MetaValue = mv.String
 		result = append(result, r)
 	}
 	if err := rows.Err(); err != nil {
@@ -63,23 +67,18 @@ func (s *RPS) UpdateDuration(ctx context.Context, id int64) error {
 }
 
 func (s *RPS) BulkUpdateDuration(ctx context.Context, ids []int64) error {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = tx.Rollback() }()
-
-	stmt, err := tx.PrepareContext(ctx, "UPDATE rps_log SET duration = duration + 1 WHERE id = ?")
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	for _, id := range ids {
-		if _, err := stmt.ExecContext(ctx, id); err != nil {
-			return err
-		}
+	if len(ids) == 0 {
+		return nil
 	}
 
-	return tx.Commit()
+	query := "UPDATE rps_log SET duration = duration + 1 WHERE id IN (?" +
+		strings.Repeat(", ?", len(ids)-1) + ")"
+
+	args := make([]any, len(ids))
+	for i, id := range ids {
+		args[i] = id
+	}
+
+	_, err := s.db.ExecContext(ctx, query, args...)
+	return err
 }
