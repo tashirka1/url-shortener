@@ -10,6 +10,7 @@ import (
 type RPSStorage interface {
 	Insert(ctx context.Context, payload string, ts int64, duration int64) (int64, error)
 	SelectJoin(ctx context.Context, limit int) ([]model.JoinRow, error)
+	SelectSimple(ctx context.Context, limit int) ([]model.JoinRow, error)
 	UpdateDuration(ctx context.Context, id int64) error
 	BulkUpdateDuration(ctx context.Context, ids []int64) error
 }
@@ -53,6 +54,32 @@ func (s *RPS) SelectJoin(ctx context.Context, limit int) ([]model.JoinRow, error
 		}
 		r.MetaKey = mk.String
 		r.MetaValue = mv.String
+		result = append(result, r)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (s *RPS) SelectSimple(ctx context.Context, limit int) ([]model.JoinRow, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT id, payload, ts, duration
+		FROM rps_log
+		ORDER BY id DESC
+		LIMIT ?
+	`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make([]model.JoinRow, 0, limit)
+	for rows.Next() {
+		var r model.JoinRow
+		if err := rows.Scan(&r.ID, &r.Payload, &r.Ts, &r.Duration); err != nil {
+			return nil, err
+		}
 		result = append(result, r)
 	}
 	if err := rows.Err(); err != nil {

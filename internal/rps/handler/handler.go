@@ -24,6 +24,7 @@ func (h *RPS) SetupRoutes(e *echo.Echo) {
 	e.GET("/rps/simple-json", h.SimpleJSON)
 	e.GET("/rps/simple-templ-page", h.SimpleTemplPage)
 	e.GET("/rps/templ-page-insert", h.TemplPageInsert)
+	e.GET("/rps/templ-page-select-simple", h.TemplPageSelectSimple)
 	e.GET("/rps/templ-page-select-join", h.TemplPageSelectJoin)
 	e.GET("/rps/templ-page-select-join-update", h.TemplPageSelectJoinUpdate)
 }
@@ -84,6 +85,18 @@ func (h *RPS) TemplPageSelectJoinUpdate(c echo.Context) error {
 	}
 	if bulkErr := h.storage.BulkUpdateDuration(ctx, ids); bulkErr != nil {
 		return bulkErr
+	}
+
+	return core_view.RenderTemplate(c, view.SelectJoinPage(rows))
+}
+
+func (h *RPS) TemplPageSelectSimple(c echo.Context) error {
+	limit := parseLimit(c.QueryParam("limit"))
+
+	ctx := c.Request().Context()
+	rows, err := h.storage.SelectSimple(ctx, limit)
+	if err != nil {
+		return err
 	}
 
 	return core_view.RenderTemplate(c, view.SelectJoinPage(rows))
