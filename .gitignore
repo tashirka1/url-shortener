@@ -3,3 +3,4 @@
 /db/
 *_templ.go
 .env
+.codegraph/
