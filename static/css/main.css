@@ -12,6 +12,10 @@ main {
     min-height: 85vh;
 }
 
+figure {
+    overflow-x: auto;
+}
+
 footer {
     margin: 0.5rem 0;
 }
