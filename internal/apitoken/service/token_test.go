@@ -90,17 +90,17 @@ func TestGenerate(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := NewToken(tt.mock)
-			token, raw, err := s.Generate(context.Background(), tt.userID, tt.tokenNm)
+			res, err := s.Generate(context.Background(), tt.userID, tt.tokenNm)
 
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
 			}
 			require.NoError(t, err)
-			assert.Equal(t, tt.wantID, token.ID)
-			assert.Equal(t, tt.wantNm, token.Name)
-			assert.Len(t, raw, 3+tokenBase62Len)
-			assert.Equal(t, "sk_", raw[:3])
+			assert.Equal(t, tt.wantID, res.Token.ID)
+			assert.Equal(t, tt.wantNm, res.Token.Name)
+			assert.Len(t, res.RawToken, 3+tokenBase62Len)
+			assert.Equal(t, "sk_", res.RawToken[:3])
 		})
 	}
 }

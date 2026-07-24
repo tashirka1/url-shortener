@@ -23,7 +23,7 @@ const (
 )
 
 type TokenService interface {
-	Generate(ctx context.Context, userID int, name string) (model.Token, string, error)
+	Generate(ctx context.Context, userID int, name string) (model.GenerateResult, error)
 	ListByUser(ctx context.Context, userID int) ([]model.Token, error)
 	Revoke(ctx context.Context, userID int, tokenID int64) error
 	Authenticate(ctx context.Context, rawToken string) (model.Token, error)
@@ -37,10 +37,10 @@ func NewToken(r storage.TokenStorage) *Token {
 	return &Token{r: r}
 }
 
-func (s *Token) Generate(ctx context.Context, userID int, name string) (model.Token, string, error) {
+func (s *Token) Generate(ctx context.Context, userID int, name string) (model.GenerateResult, error) {
 	b := make([]byte, tokenBytes)
 	if _, err := rand.Read(b); err != nil {
-		return model.Token{}, "", fmt.Errorf("generate token: %w", err)
+		return model.GenerateResult{}, fmt.Errorf("generate token: %w", err)
 	}
 
 	var n big.Int
@@ -61,10 +61,10 @@ func (s *Token) Generate(ctx context.Context, userID int, name string) (model.To
 
 	t, err := s.r.Insert(ctx, userID, name, tokenHash, prefix)
 	if err != nil {
-		return model.Token{}, "", fmt.Errorf("save token: %w", err)
+		return model.GenerateResult{}, fmt.Errorf("save token: %w", err)
 	}
 	slog.InfoContext(ctx, "api token created", "user_id", userID, "token_id", t.ID)
-	return t, fullToken, nil
+	return model.GenerateResult{Token: t, RawToken: fullToken}, nil
 }
 
 func (s *Token) ListByUser(ctx context.Context, userID int) ([]model.Token, error) {

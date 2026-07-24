@@ -52,7 +52,7 @@ func (h *Token) Generate(c echo.Context) error {
 
 	ctx := c.Request().Context()
 
-	token, rawToken, err := h.s.Generate(ctx, userID, name)
+	res, err := h.s.Generate(ctx, userID, name)
 	if err != nil {
 		slog.ErrorContext(ctx, "token generate failed", "user_id", userID, "error", err)
 		c.Response().Header().Set("HX-Retarget", "#token-errors")
@@ -68,7 +68,7 @@ func (h *Token) Generate(c echo.Context) error {
 
 	c.Response().Header().Set("HX-Trigger", "reset-token-form")
 
-	return core_view.RenderTemplate(c, view.TokenListAndDisplay(tokens, rawToken, token.Name))
+	return core_view.RenderTemplate(c, view.TokenListAndDisplay(tokens, res.RawToken, res.Token.Name))
 }
 
 func (h *Token) Revoke(c echo.Context) error {
