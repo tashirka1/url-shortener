@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"database/sql"
-	"strings"
 	"url_shortener/internal/rps/model"
 )
 
@@ -11,8 +10,7 @@ type RPSStorage interface {
 	Insert(ctx context.Context, payload string, ts int64, duration int64) (int64, error)
 	SelectJoin(ctx context.Context, limit int) ([]model.JoinRow, error)
 	SelectSimple(ctx context.Context, limit int) ([]model.JoinRow, error)
-	UpdateDuration(ctx context.Context, id int64) error
-	BulkUpdateDuration(ctx context.Context, ids []int64) error
+	Update(ctx context.Context) error
 }
 
 type RPS struct {
@@ -88,24 +86,7 @@ func (s *RPS) SelectSimple(ctx context.Context, limit int) ([]model.JoinRow, err
 	return result, nil
 }
 
-func (s *RPS) UpdateDuration(ctx context.Context, id int64) error {
-	_, err := s.db.ExecContext(ctx, "UPDATE rps_log SET duration = duration + 1 WHERE id = ?", id)
-	return err
-}
-
-func (s *RPS) BulkUpdateDuration(ctx context.Context, ids []int64) error {
-	if len(ids) == 0 {
-		return nil
-	}
-
-	query := "UPDATE rps_log SET duration = duration + 1 WHERE id IN (?" +
-		strings.Repeat(", ?", len(ids)-1) + ")"
-
-	args := make([]any, len(ids))
-	for i, id := range ids {
-		args[i] = id
-	}
-
-	_, err := s.db.ExecContext(ctx, query, args...)
+func (s *RPS) Update(ctx context.Context) error {
+	_, err := s.db.ExecContext(ctx, "UPDATE rps_log WHERE id=1 SET duration = duration + 1")
 	return err
 }

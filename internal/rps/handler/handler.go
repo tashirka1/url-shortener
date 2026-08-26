@@ -26,7 +26,7 @@ func (h *RPS) SetupRoutes(e *echo.Echo) {
 	e.GET("/rps/templ-page-insert", h.TemplPageInsert)
 	e.GET("/rps/templ-page-select-simple", h.TemplPageSelectSimple)
 	e.GET("/rps/templ-page-select-join", h.TemplPageSelectJoin)
-	e.GET("/rps/templ-page-select-join-update", h.TemplPageSelectJoinUpdate)
+	e.GET("/rps/templ-page-update", h.TemplPageUpdate)
 }
 
 func (h *RPS) SimpleText(c echo.Context) error {
@@ -69,25 +69,13 @@ func (h *RPS) TemplPageSelectJoin(c echo.Context) error {
 	return core_view.RenderTemplate(c, view.SelectJoinPage(rows))
 }
 
-func (h *RPS) TemplPageSelectJoinUpdate(c echo.Context) error {
-	limit := parseLimit(c.QueryParam("limit"))
-
+func (h *RPS) TemplPageUpdate(c echo.Context) error {
 	ctx := c.Request().Context()
-	rows, err := h.storage.SelectJoin(ctx, limit)
-	if err != nil {
+	if err := h.storage.Update(ctx); err != nil {
 		return err
 	}
 
-	ids := make([]int64, len(rows))
-	for i := range rows {
-		ids[i] = rows[i].ID
-		rows[i].Duration++ // отражает UPDATE, чтобы не делать второй SELECT
-	}
-	if bulkErr := h.storage.BulkUpdateDuration(ctx, ids); bulkErr != nil {
-		return bulkErr
-	}
-
-	return core_view.RenderTemplate(c, view.SelectJoinPage(rows))
+	return core_view.RenderTemplate(c, view.UpdatePage())
 }
 
 func (h *RPS) TemplPageSelectSimple(c echo.Context) error {

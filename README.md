@@ -45,5 +45,6 @@ wrk -t10 -c100 -d5s http://localhost:8000/rps/simple-json
 wrk -t10 -c100 -d5s http://localhost:8000/rps/simple-templ-page
 wrk -t10 -c100 -d5s 'http://localhost:8000/rps/templ-page-insert?payload=bench'
 wrk -t10 -c100 -d5s 'http://localhost:8000/rps/templ-page-select-join?limit=15'
-wrk -t10 -c100 -d5s 'http://localhost:8000/rps/templ-page-select-join-update?limit=15'
+wrk -t10 -c100 -d5s 'http://localhost:8000/rps/templ-page-update'
+wrk -t10 -c100 -d5s 'http://localhost:8000/rps/templ-page-select-simple?limit=15's
 ```

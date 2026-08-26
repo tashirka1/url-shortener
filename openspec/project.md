@@ -174,7 +174,7 @@ htmx click/form → handler (parse + validate) → service (business logic via i
 | GET | `/rps/simple-templ-page` | rps.SimpleTemplPage | No | rps |
 | GET | `/rps/templ-page-insert` | rps.TemplPageInsert | No | rps |
 | GET | `/rps/templ-page-select-join` | rps.TemplPageSelectJoin | No | rps |
-| GET | `/rps/templ-page-select-join-update` | rps.TemplPageSelectJoinUpdate | No | rps |
+| GET | `/rps/templ-page-update` | rps.TemplPageUpdate | No | rps |
 
 Auth middleware (`session.AuthMiddleware`) is applied via `group.Use()` on `/link/*` routes.
 
