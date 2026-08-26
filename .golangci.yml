@@ -10,6 +10,8 @@ linters:
     - unconvert
     - forbidigo
     - bodyclose
+    - rowserrcheck
+    - sqlclosecheck
   settings:
     govet:
       enable-all: true # Включает все внутренние проверки типов и shadow-переменные
