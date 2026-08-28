@@ -122,7 +122,11 @@ func (h *Link) RemoveLink(c echo.Context) error {
 func (h *Link) RedirectLink(c echo.Context) error {
 	code := c.Param("code")
 	ref := c.Request().Referer()
-	url, err := h.s.GetAndClick(c.Request().Context(), code, ref, "")
+	ua := c.Request().UserAgent()
+	if len(ua) > 512 {
+		ua = ua[:512]
+	}
+	url, err := h.s.GetAndClick(c.Request().Context(), code, ref, ua)
 	if err != nil {
 		slog.Warn("link not found", "code", code, "error", err.Error())
 		return echo.NewHTTPError(http.StatusNotFound, "Ссылка не найдена")

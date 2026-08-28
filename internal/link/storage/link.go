@@ -3,12 +3,15 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 	"unicode"
 	"url_shortener/internal/core/base62"
 	"url_shortener/internal/link/model"
+
+	"github.com/mattn/go-sqlite3"
 )
 
 type LinkStorage interface {
@@ -159,15 +162,12 @@ func (r *Link) UpdateAlias(ctx context.Context, userID int, currentCode, newCode
 	if currentCode == newCode {
 		return nil
 	}
-	var count int
-	if err := r.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM link_link WHERE code=?", newCode).Scan(&count); err != nil {
-		return err
-	}
-	if count > 0 {
-		return model.ErrAliasTaken
-	}
 	res, err := r.db.ExecContext(ctx, "UPDATE link_link SET code=? WHERE code=? AND user_id=?", newCode, currentCode, userID)
 	if err != nil {
+		var sqliteErr sqlite3.Error
+		if errors.As(err, &sqliteErr) && sqliteErr.ExtendedCode == sqlite3.ErrConstraintUnique {
+			return model.ErrAliasTaken
+		}
 		return err
 	}
 	rows, err := res.RowsAffected()

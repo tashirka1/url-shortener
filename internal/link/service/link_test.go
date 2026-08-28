@@ -330,12 +330,13 @@ func TestGetAndClick_Success(t *testing.T) {
 		getAndClickFunc: func(ctx context.Context, code, referrer, userAgent string) (model.Link, error) {
 			assert.Equal(t, "abc", code)
 			assert.Equal(t, "https://google.com", referrer)
+			assert.Equal(t, "Mozilla/5.0", userAgent)
 			return model.Link{Id: 1, Url: "https://example.com", Code: "abc"}, nil
 		},
 	}
 	s := NewLink(mock, &mockClickStorage{})
 
-	url, err := s.GetAndClick(context.Background(), "abc", "https://google.com", "")
+	url, err := s.GetAndClick(context.Background(), "abc", "https://google.com", "Mozilla/5.0")
 
 	assert.NoError(t, err)
 	assert.Equal(t, "https://example.com", url)

@@ -86,7 +86,10 @@ func (h *User) PostLogin(c echo.Context) error {
 }
 
 func (h *User) Logout(c echo.Context) error {
-	session.ClearSession(c)
+	if err := session.ClearSession(c); err != nil {
+		slog.Error("clear session failed", "error", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "logout failed")
+	}
 	return c.Redirect(http.StatusSeeOther, "/auth/login")
 }
 

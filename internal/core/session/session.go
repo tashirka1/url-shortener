@@ -20,9 +20,17 @@ func AuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		sess, err := session.Get(UserSessionsKey, c)
 		if err != nil || sess == nil {
 			slog.Warn("session get failed", "error", err)
-			sess.Options.MaxAge = -1
-			if err := sess.Save(c.Request(), c.Response()); err != nil {
-				slog.Error("session save failed", "error", err)
+			if sess != nil {
+				sess.Options = &sessions.Options{
+					Path:     "/",
+					MaxAge:   -1,
+					HttpOnly: true,
+					Secure:   false,
+					SameSite: http.SameSiteLaxMode,
+				}
+				if saveErr := sess.Save(c.Request(), c.Response()); saveErr != nil {
+					slog.Error("session save failed", "error", saveErr)
+				}
 			}
 			c.Response().Header().Set("HX-Redirect", "/auth/login")
 			return view.RenderTemplate(c, view.Unauthorized(0))
@@ -48,13 +56,19 @@ func GetUserId(c echo.Context) int {
 	return userId
 }
 
-func ClearSession(c echo.Context) {
+func ClearSession(c echo.Context) error {
 	sess, err := session.Get(UserSessionsKey, c)
 	if err != nil || sess == nil {
-		return
+		return err
 	}
-	sess.Options.MaxAge = -1
-	_ = sess.Save(c.Request(), c.Response())
+	sess.Options = &sessions.Options{
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   false,
+		SameSite: http.SameSiteLaxMode,
+	}
+	return sess.Save(c.Request(), c.Response())
 }
 
 func SetUserId(c echo.Context, userId int) {
@@ -67,7 +81,7 @@ func SetUserId(c echo.Context, userId int) {
 		Path:     "/",
 		MaxAge:   60 * 60 * 24 * 7,
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   false,
 		SameSite: http.SameSiteLaxMode,
 	}
 	sess.Values[UserIdKey] = userId

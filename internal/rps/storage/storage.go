@@ -87,6 +87,6 @@ func (s *RPS) SelectSimple(ctx context.Context, limit int) ([]model.JoinRow, err
 }
 
 func (s *RPS) Update(ctx context.Context) error {
-	_, err := s.db.ExecContext(ctx, "UPDATE rps_log WHERE id=1 SET duration = duration + 1")
+	_, err := s.db.ExecContext(ctx, "UPDATE rps_log SET duration = duration + 1 WHERE id = 1")
 	return err
 }

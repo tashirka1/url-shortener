@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"testing"
 	"url_shortener"
@@ -16,8 +17,9 @@ import (
 
 func setupDB(t *testing.T) *sql.DB {
 	t.Helper()
-	db, err := sql.Open("sqlite3", ":memory:")
+	db, err := sql.Open("sqlite3", "file::memory:?cache=shared&_busy_timeout=5000")
 	require.NoError(t, err)
+	db.SetMaxOpenConns(1)
 	t.Cleanup(func() { db.Close() })
 
 	goose.SetBaseFS(url_shortener.EmbeddedMigrations)
@@ -273,4 +275,41 @@ func TestSearchLink_OtherUser(t *testing.T) {
 	links, err := r.SearchLink(context.Background(), userId2, "example")
 	assert.NoError(t, err)
 	assert.Empty(t, links)
+}
+
+func TestUpdateAlias_ConcurrentRace(t *testing.T) {
+	db := setupDB(t)
+	r := NewLink(db)
+	userIds := make([]int, 10)
+	for i := 0; i < 10; i++ {
+		userIds[i] = addUser(t, db)
+		insertLink(t, db, fmt.Sprintf("code%d", i), fmt.Sprintf("https://example%d.com", i), userIds[i])
+	}
+
+	const target = "race-alias"
+	results := make(chan error, 10)
+	for i := 0; i < 10; i++ {
+		go func(idx int) {
+			results <- r.UpdateAlias(context.Background(), userIds[idx], fmt.Sprintf("code%d", idx), target)
+		}(i)
+	}
+
+	var success, aliasTaken int
+	for i := 0; i < 10; i++ {
+		err := <-results
+		if err == nil {
+			success++
+		} else if errors.Is(err, model.ErrAliasTaken) {
+			aliasTaken++
+		} else {
+			t.Logf("unexpected error: %v", err)
+		}
+	}
+
+	assert.Equal(t, 1, success, "exactly one concurrent alias claim should succeed")
+	assert.Equal(t, 9, aliasTaken, "remaining should get ErrAliasTaken")
+
+	var count int
+	require.NoError(t, db.QueryRow("SELECT COUNT(*) FROM link_link WHERE code=?", target).Scan(&count))
+	assert.Equal(t, 1, count)
 }

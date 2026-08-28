@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
@@ -72,7 +73,8 @@ func (h *RPS) TemplPageSelectJoin(c echo.Context) error {
 func (h *RPS) TemplPageUpdate(c echo.Context) error {
 	ctx := c.Request().Context()
 	if err := h.storage.Update(ctx); err != nil {
-		return err
+		slog.ErrorContext(ctx, "rps update failed", "error", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "update failed")
 	}
 
 	return core_view.RenderTemplate(c, view.UpdatePage())

@@ -1,2 +1,2 @@
 SESSION_KEY=dev_key
-DB_NAME=./db/main.db
+DB_NAME=./db/url-shortener.db
