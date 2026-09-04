@@ -19,6 +19,7 @@ import (
 	auth_handler "url_shortener/internal/auth/handler"
 	auth_service "url_shortener/internal/auth/service"
 	auth_storage "url_shortener/internal/auth/storage"
+	"url_shortener/internal/core/config"
 	"url_shortener/internal/core/db"
 	"url_shortener/internal/core/health"
 	link_handler "url_shortener/internal/link/handler"
@@ -28,7 +29,6 @@ import (
 	rps_storage "url_shortener/internal/rps/storage"
 
 	"github.com/gorilla/sessions"
-	"github.com/joho/godotenv"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -42,34 +42,24 @@ func main() {
 }
 
 func Run() error {
-	// env
-	if err := godotenv.Load(); err != nil {
-		slog.Warn(".env file not found, using environment variables")
-	}
-
-	sessionKey := os.Getenv("SESSION_KEY")
-	if sessionKey == "" {
-		return fmt.Errorf("SESSION_KEY is not set")
-	}
-
-	dbName := os.Getenv("DB_NAME")
-	if dbName == "" {
-		return fmt.Errorf("DB_NAME is not set")
-	}
-
 	// logger
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
+	cfg, err := config.Load()
+	if err != nil {
+		return fmt.Errorf("config: %w", err)
+	}
+
 	// database
-	database, err := db.NewDB(dbName)
+	database, err := db.NewDB(cfg.DBName)
 	if err != nil {
 		return fmt.Errorf("failed to open database: %w", err)
 	}
 	defer database.Close()
 
 	// session
-	sessionStore := sessions.NewCookieStore([]byte(sessionKey))
+	sessionStore := sessions.NewCookieStore([]byte(cfg.SessionKey))
 
 	// echo
 	e := echo.New()
@@ -122,9 +112,10 @@ func Run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
+	addr := fmt.Sprintf(":%s", cfg.Port)
 	go func() {
-		slog.Info("server starting on :8000")
-		if err := e.Start(":8000"); err != nil && err != http.ErrServerClosed {
+		slog.Info("server starting", "addr", addr)
+		if err := e.Start(addr); err != nil && err != http.ErrServerClosed {
 			slog.Error("server error", "error", err)
 			stop()
 		}
