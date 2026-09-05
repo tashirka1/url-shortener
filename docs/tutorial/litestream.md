@@ -19,7 +19,7 @@ sudo dpkg -i litestream-0.5.8-linux-x86_64.deb
 
 ## Конфигурация
 
-### Репликация (`litestream/replicate.yml`)
+### Репликация (`litestream/replicate.yml` — фактический шаблон в репо)
 
 ```yaml
 access-key-id: ${LITESTREAM_ACCESS_KEY_ID}
@@ -29,12 +29,12 @@ endpoint: ${LITESTREAM_ENDPOINT}
 sync-interval: 1s
 
 dbs:
-  - path: /db/main.db              # где лежит SQLite
+  - path: /db/main.db              # ВАЖНО: в приложении дефолт ./db/url-shortener.db (DB_NAME, internal/core/config/config.go:39); синхронизируй path с DB_NAME или симлинком
     replica:
       type: s3
-      bucket: 5e8ff288febf-sqlite-backups
+      bucket: bucket-name          # замени на реальный бакет (в ранней версии доки: 5e8ff288febf-sqlite-backups)
       force-path-style: true       # нужно для MinIO / Yandex Object Storage
-      path: url-shortener          # префикс в бакете
+      path: path-name              # префикс в бакете (ранее: url-shortener)
 ```
 
 | Параметр | Описание |
@@ -45,7 +45,7 @@ dbs:
 | `force-path-style` | true для MinIO и S3-совместимых, кроме AWS |
 | `path` | префикс в бакете (папка) |
 
-### Restore (`litestream/restore.yml`)
+### Restore (`litestream/restore.yml` — фактический шаблон в репо)
 
 ```yaml
 access-key-id: ${LITESTREAM_ACCESS_KEY_ID}
@@ -54,11 +54,11 @@ region: us-east-1
 endpoint: ${LITESTREAM_ENDPOINT}
 
 dbs:
-  - path: ./main.db                # куда восстановить
+  - path: ./main.db                # куда восстановить (пример)
     replicas:
       - type: s3
-        bucket: 5e8ff288febf-sqlite-backups
-        path: url-shortener
+        bucket: bucket-name        # замени на реальный (ранее: 5e8ff288febf-sqlite-backups)
+        path: path-name            # ранее: url-shortener
 ```
 
 ## Как это работает
@@ -66,7 +66,7 @@ dbs:
 ```
 ┌──────────────┐     WAL-запись     ┌─────────────┐
 │  SQLite      │ ──────────────────→│  WAL-файл    │
-│  (приложение) │                   │  main.db-wal  │
+│  (приложение) │                   │  url-shortener.db-wal  │ # имя зависит от DB_NAME
 └──────────────┘                    └──────┬──────┘
                                            │ Litestream читает
                                            ▼
@@ -83,18 +83,18 @@ dbs:
 3. Litestream читает WAL, нарезает на сегменты, отправляет в S3
 4. Периодически Litestream делает snapshot (полная копия БД)
 
-### Структура в S3
+### Структура в S3 (пример, bucket/path замени на свои)
 
 ```
-5e8ff288febf-sqlite-backups/
-  url-shortener/
-    snapshots/
-      20250101T120000Z.main.db   -- полный слепок БД
-      20250102T120000Z.main.db
-    wal/
-      0000000000000001.main.db-wal   -- WAL-сегменты
-      0000000000000002.main.db-wal
-      ...
+bucket-name/path-name/
+  snapshots/
+    20250101T120000Z.db   -- полный слепок БД
+    20250102T120000Z.db
+  wal/
+    0000000000000001.db-wal   -- WAL-сегменты
+    0000000000000002.db-wal
+    ...
+# в ранней версии доки: 5e8ff288febf-sqlite-backups/url-shortener/
 ```
 
 ## Запуск
@@ -121,9 +121,9 @@ litestream restore -config ./litestream/restore.yml ./main.db
 Litestream пишет в stderr в структурированном формате:
 
 ```
-2025-06-06T10:00:00.000Z INF replicating db=/db/main.db max-age=1s
-2025-06-06T10:00:01.000Z INF snapshot created db=/db/main.db name=20250606T100001Z.main.db size=4.2MB
-2025-06-06T10:00:05.000Z WAL segment uploaded db=/db/main.db segment=0000000000000042.main.db-wal
+2025-06-06T10:00:00.000Z INF replicating db=/db/url-shortener.db max-age=1s # путь = DB_NAME
+2025-06-06T10:00:01.000Z INF snapshot created db=/db/url-shortener.db name=20250606T100001Z.db size=4.2MB
+2025-06-06T10:00:05.000Z WAL segment uploaded db=/db/url-shortener.db segment=0000000000000042.db-wal
 ```
 
 ## Аварийное восстановление
@@ -134,11 +134,12 @@ Litestream пишет в stderr в структурированном форма
 # 1. Останавливаем приложение
 docker compose down
 
-# 2. Удаляем повреждённую БД
-rm -f db/main.db db/main.db-wal db/main.db-shm
+# 2. Удаляем повреждённую БД (дефолт DB_NAME=./db/url-shortener.db, в шаблоне litestream — /db/main.db)
+rm -f db/url-shortener.db db/url-shortener.db-wal db/url-shortener.db-shm
+# или: rm -f db/main.db db/main.db-wal db/main.db-shm
 
 # 3. Восстанавливаем из S3
-litestream restore -config ./litestream/restore.yml ./db/main.db
+litestream restore -config ./litestream/restore.yml ./db/url-shortener.db
 
 # 4. Запускаем снова
 docker compose up -d
@@ -171,7 +172,7 @@ Litestream — самый простой способ получить бека�
 
 ```bash
 # запуск репликации
-litestream replicate -config ./litestream/replicate.yml -exec "/app/bin/http"
+litestream replicate -config ./litestream/replicate.yml -exec "/app/bin/url-shortener"
 
 # восстановление
 litestream restore -config ./litestream/restore.yml ./main.db

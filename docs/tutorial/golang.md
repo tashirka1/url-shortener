@@ -78,7 +78,7 @@ defer func() {
 Контекст передаётся через всё приложение — от HTTP-запроса до SQL-запроса:
 
 ```go
-// cmd/http/main.go — контекст с таймаутом для graceful shutdown
+// cmd/url-shortener/main.go:127 — контекст с таймаутом для graceful shutdown
 shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 defer cancel()
 e.Shutdown(shutdownCtx)
@@ -233,7 +233,7 @@ cursor, err := strconv.Atoi(c.QueryParam("cursor"))  // string → int
 ## Map
 
 ```go
-// cmd/http/main.go — литерал map
+// cmd/url-shortener/main.go — литерал map (health, error handler)
 c.JSON(he.Code, map[string]any{
     "error":   http.StatusText(he.Code),
     "message": he.Message,
@@ -257,9 +257,9 @@ if val, ok := m["key"]; ok {
 ## Pointer
 
 ```go
-// internal/auth/storage/user.go — возврат указателя из конструктора
-func NewUser(db *sql.DB, sessionStore *sessions.CookieStore) *User {
-    return &User{db: db, sessionStore: sessionStore}
+// internal/auth/storage/user.go:21 — возврат указателя из конструктора
+func NewUser(db *sql.DB) *User {
+    return &User{db: db}
 }
 
 // internal/auth/service/user.go — указатель на структуру в методе
@@ -277,10 +277,10 @@ func (s *User) CheckUser(ctx context.Context, email, password string) (model.Use
 ## Goroutine Worker
 
 ```go
-// cmd/http/main.go — goroutine для старта сервера
+// cmd/url-shortener/main.go:116 — goroutine для старта сервера
 go func() {
-    slog.Info("server starting on :8000")
-    if err := e.Start(":8000"); err != nil && err != http.ErrServerClosed {
+    slog.Info("server starting", "addr", addr) // addr = ":" + cfg.Port
+    if err := e.Start(addr); err != nil && err != http.ErrServerClosed {
         slog.Error("server error", "error", err)
         stop()  // дёргаем cancel, основной поток завершается
     }
@@ -366,14 +366,15 @@ sort.Slice(links, func(i, j int) bool {
 
 ## Работа с SQLite
 
-Полный разбор в `docs/sqlite3.md`. Кратко:
+Полный разбор в `docs/tutorial/sqlite3.md`. Кратко:
 
 ```go
-import _ "github.com/mattn/go-sqlite3"       // pure-Go, без CGO
+import _ "github.com/mattn/go-sqlite3"       // CGO, требует CGO_ENABLED=1 и build-base sqlite-dev
 
-db, err := sql.Open("sqlite", "file:db/main.db?_pragma=busy_timeout(10000)")
-db.SetMaxOpenConns(8)               // WAL + busy_timeout = concurrent reads
-db.SetMaxIdleConns(8)
+// internal/core/db/db.go:32 — драйвер "sqlite3", DSN с прагмами на каждое соединение
+db, err := sql.Open("sqlite3", "file:./db/url-shortener.db?_pragma=busy_timeout(10000)&_pragma=journal_mode(WAL)...")
+db.SetMaxOpenConns(64)              // WAL + busy_timeout = concurrent reads, 64 для 8 ядер
+db.SetMaxIdleConns(64)
 
 // параметризованные запросы через ?
 rows, _ := db.QueryContext(ctx, "SELECT * FROM link_link WHERE user_id = ?", id)

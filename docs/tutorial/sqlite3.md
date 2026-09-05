@@ -5,11 +5,11 @@
 `github.com/mattn/go-sqlite3` — go драйвер. DSN может содержать прагмы, которые применяются к каждому новому соединению:
 
 ```go
-// internal/core/db/db.go
+// internal/core/db/db.go:11 — CGO драйвер, требует CGO_ENABLED=1
 import _ "github.com/mattn/go-sqlite3"
 
-dsn := fmt.Sprintf("file:%s?_pragma=busy_timeout(10000)", path)
-db, err := sql.Open("sqlite", dsn)
+dsn := fmt.Sprintf("file:%s?_pragma=busy_timeout(10000)&_pragma=foreign_keys(ON)&_pragma=journal_mode(WAL)...", path)
+db, err := sql.Open("sqlite3", dsn) // драйвер "sqlite3", не "sqlite"
 ```
 
 ## Connection pool
@@ -17,13 +17,14 @@ db, err := sql.Open("sqlite", dsn)
 `sql.DB` — это пул соединений, не одно соединение. Настройка пула для read-heavy сценария:
 
 ```go
-db.SetMaxOpenConns(8)                    // 8 читателей параллельно
-db.SetMaxIdleConns(8)                    // все 8 держать в запасе
+// internal/core/db/db.go:38 — read-heavy: 64 для 8 ядер, WAL снимает блокировки
+db.SetMaxOpenConns(64)                   // 64 читателя параллельно
+db.SetMaxIdleConns(64)                   // все 64 держать в запасе
 db.SetConnMaxLifetime(30 * time.Minute)  // периодическая переустановка
 db.SetConnMaxIdleTime(15 * time.Minute)  // закрыть idle раньше, чем ConnMaxLifetime
 ```
 
-**`MaxOpenConns = 8`:** WAL mode позволяет читать параллельно. Писатель только один, но читатели не блокируются. При `busy_timeout=10s` писатель ждёт до 10 секунд, если БД заблокирована — ошибки `SQLITE_BUSY` не будет.
+**`MaxOpenConns = 64`:** WAL mode позволяет читать параллельно. Писатель только один, но читатели не блокируются. При `busy_timeout=10s` писатель ждёт до 10 секунд, если БД заблокирована — ошибки `SQLITE_BUSY` не будет. 64 выбрано для 8 ядер (коммент `internal/core/db/db.go:37`).
 
 **`MaxIdleConns = MaxOpenConns`:** нет смысла закрывать соединения, если нагрузка постоянная. idle соединения не потребляют ресурсов, только лежат в пуле.
 
@@ -34,30 +35,29 @@ db.SetConnMaxIdleTime(15 * time.Minute)  // закрыть idle раньше, ч
 | Сценарий | `MaxOpenConns` | Зачем |
 |----------|----------------|-------|
 | Микро-сервис, 1 rps | 1 | Проще, нет риска `SQLITE_BUSY` |
-| **Read-heavy + WAL** (наш) | **4–8** | Конкурентные чтения не блокируют друг друга |
+| **Read-heavy + WAL** (наш) | **64** | Конкурентные чтения не блокируют друг друга (8 ядер × 8) |
 | Write-heavy batch | 1 | Один писатель — нет конкуренции |
 
-Для проекта с WAL + `busy_timeout` безопасно держать 8 соединений.
+Для проекта с WAL + `busy_timeout` безопасно держать 64 соединения (было 8 — увеличено для read-heavy).
 
 ## PRAGMA из проекта
 
-Все прагмы применяются к каждому новому соединению через DSN + `db.Exec`:
+Все прагмы применяются к каждому новому соединению через DSN (не через `db.Exec` — `Exec` действует только на одно соединение из пула):
 
 ```go
-// DSN: busy_timeout передаётся через URL-параметр
-dsn := fmt.Sprintf("file:%s?_pragma=busy_timeout(10000)", path)
-
-db.Exec(`
-    PRAGMA busy_timeout=10000;        -- ждать до 10s при блокировке вместо SQLITE_BUSY
-    PRAGMA foreign_keys=ON;           -- проверка внешних ключей (по умолчанию OFF!)
-    PRAGMA journal_mode=WAL;          -- WAL: чтение не блокирует запись и наоборот
-    PRAGMA synchronous = NORMAL;      -- безопаснее OFF, быстрее FULL (WAL mode)
-    PRAGMA auto_vacuum = INCREMENTAL; -- не отдавать ОС сразу, можно вызвать PRAGMA incremental_vacuum
-    PRAGMA journal_size_limit = 67110000;  -- ~64MB — ограничение размера WAL-журнала
-    PRAGMA temp_store = MEMORY;       -- временные таблицы/индексы в RAM
-    PRAGMA cache_size = -65536;       -- 64MB кеш страниц (отрицательное = килобайты)
-    PRAGMA page_size = 4096;          -- размер страницы (до первой таблицы, после — только VACUUM)
-`)
+// internal/core/db/db.go:19 — все прагмы в DSN, применяются к каждому соединению пула
+dsn := fmt.Sprintf("file:%s?_pragma=busy_timeout(10000)&_pragma=foreign_keys(ON)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=temp_store(MEMORY)&_pragma=cache_size(-65536)&_pragma=auto_vacuum(INCREMENTAL)&_pragma=journal_size_limit(67110000)&_pragma=page_size(4096)", path)
+// Эквивалент:
+//   PRAGMA busy_timeout=10000;        -- ждать до 10s при блокировке вместо SQLITE_BUSY
+//   PRAGMA foreign_keys=ON;           -- проверка внешних ключей (по умолчанию OFF!)
+//   PRAGMA journal_mode=WAL;          -- WAL: чтение не блокирует запись и наоборот
+//   PRAGMA synchronous=NORMAL;        -- безопаснее OFF, быстрее FULL (WAL mode)
+//   PRAGMA auto_vacuum=INCREMENTAL;   -- не отдавать ОС сразу, можно вызвать PRAGMA incremental_vacuum
+//   PRAGMA journal_size_limit=67110000; -- ~64MB — ограничение размера WAL-журнала
+//   PRAGMA temp_store=MEMORY;         -- временные таблицы/индексы в RAM
+//   PRAGMA cache_size=-65536;         -- 64MB кеш страниц (отрицательное = килобайты)
+//   PRAGMA page_size=4096;            -- размер страницы (до первой таблицы, после — только VACUUM)
+```
 ```
 
 | PRAGMA | Зачем |
@@ -82,27 +82,29 @@ goose.SetDialect("sqlite3")
 goose.UpContext(ctx, db, "migrations")
 ```
 
-SQL-миграция:
+SQL-миграция (упрощённо — фактически 7 миграций, см. `migrations/`):
 
 ```sql
--- migrations/20260604192121_create_tables.sql
+-- migrations/20260604192121_create_tables.sql:2
 -- +goose Up
 CREATE TABLE auth_user(id INTEGER PRIMARY KEY, email TEXT, password TEXT, UNIQUE(email));
-
 CREATE TABLE link_link(
-    id INTEGER PRIMARY KEY,
-    code TEXT,
-    url TEXT,
-    clicks INTEGER,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    user_id INTEGER,
-    FOREIGN KEY (user_id) REFERENCES auth_user(id),
-    UNIQUE(code)
+    id INTEGER PRIMARY KEY, code TEXT, url TEXT, clicks INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP, user_id INTEGER,
+    FOREIGN KEY (user_id) REFERENCES auth_user(id), UNIQUE(code)
 );
+CREATE INDEX idx_link_link_user_id_id ON link_link(user_id, id DESC);
+CREATE UNIQUE INDEX idx_link_link_user_url ON link_link(user_id, url);
 
 -- +goose Down
-DROP TABLE link_link;
-DROP TABLE auth_user;
+DROP INDEX idx_link_link_user_id_id; DROP INDEX idx_link_link_user_url;
+DROP TABLE link_link; DROP TABLE auth_user;
+
+-- + дополнительно (см. остальные миграции):
+-- migrations/20260623100000_create_fts_index.sql — VIRTUAL TABLE link_fts USING fts5(code, url, tokenize='unicode61', content='link_link') + триггеры link_ai/ad/au
+-- migrations/20260714100000_create_link_click.sql — CREATE TABLE link_click(link_id REFERENCES link_link, referrer, user_agent, clicked_at)
+-- migrations/20260715100000_create_api_token.sql — CREATE TABLE api_token(user_id, token_hash UNIQUE, prefix, revoked_at...)
+-- migrations/20260703100000_create_rps_tables.sql — CREATE TABLE rps_log / rps_meta
 ```
 
 ## Параметризованные запросы
@@ -302,22 +304,20 @@ PRAGMA optimize;
 
 Безопасно запускать периодически (например, в cron или при завершении приложения).
 
-## FTS5 — полнотекстовый поиск
+## FTS5 — полнотекстовый поиск (реально в проекте)
 
 ```sql
--- создаём виртуальную FTS5-таблицу
-CREATE VIRTUAL TABLE link_fts USING fts5(code, url, content='link_link', content_rowid='id');
+-- migrations/20260623100000_create_fts_index.sql:2 — уже применено
+CREATE VIRTUAL TABLE link_fts USING fts5(code, url, tokenize='unicode61', content='link_link', content_rowid='id');
+-- триггеры для синхронизации (см. файл миграции: link_ai, link_ad, link_au)
+-- поиск в проекте: internal/link/storage/link.go:185
+SELECT l.id, l.code, l.url, l.clicks, l.created_at
+FROM link_link l JOIN link_fts f ON l.id = f.rowid
+WHERE l.user_id = ? AND link_fts MATCH ? ORDER BY bm25(link_fts) LIMIT 20;
 
--- синхронизируем с основной таблицей
+-- ручная синхронизация (если нужно):
 INSERT INTO link_fts(rowid, code, url) SELECT id, code, url FROM link_link;
-
--- поиск
 SELECT * FROM link_fts WHERE link_fts MATCH 'example';
-
--- обновление через триггеры (чтобы FTS не расходилась с данными)
-CREATE TRIGGER link_fts_insert AFTER INSERT ON link_link BEGIN
-    INSERT INTO link_fts(rowid, code, url) VALUES (new.id, new.code, new.url);
-END;
 ```
 
 ## Transactions
@@ -335,12 +335,15 @@ UPDATE link_link SET clicks = clicks + 1 WHERE id = 1;
 ROLLBACK TO sp;  -- откатить только часть
 ```
 
-В Go:
+В Go (реальный пример клика — транзакция, см. `internal/link/storage/link.go:113`):
 
 ```go
 tx, _ := db.BeginTx(ctx, nil)
-tx.ExecContext(ctx, "UPDATE link_link SET clicks = clicks + 1 WHERE id = ?", id)
-tx.Commit()  // или tx.Rollback()
+defer tx.Rollback()
+tx.QueryRowContext(ctx, "SELECT id, url FROM link_link WHERE code=?", code).Scan(&id, &url)
+tx.ExecContext(ctx, "UPDATE link_link SET clicks=clicks+1 WHERE code=?", code)
+tx.ExecContext(ctx, "INSERT INTO link_click(link_id, referrer, user_agent) VALUES (?,?,?)", id, referrer, userAgent)
+tx.Commit()
 ```
 
 ## Atomic UPDATE
