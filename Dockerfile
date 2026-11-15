@@ -1,4 +1,4 @@
-FROM ghcr.io/a-h/templ:latest AS templ
+FROM ghcr.io/a-h/templ:v0.3.1118 AS templ
 COPY --chown=65532:65532 . /app
 WORKDIR /app
 RUN ["templ", "generate"]
