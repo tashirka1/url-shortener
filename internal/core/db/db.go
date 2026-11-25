@@ -18,15 +18,15 @@ func NewDB(path string) (*sql.DB, error) {
 	// который действует только на одном соединении)
 	dsn := fmt.Sprintf(
 		"file:%s"+
-			"?_pragma=busy_timeout(10000)"+
-			"&_pragma=foreign_keys(ON)"+
-			"&_pragma=journal_mode(WAL)"+
-			"&_pragma=synchronous(NORMAL)"+
+			"?_busy_timeout=10000"+
+			"&_foreign_keys=ON"+
+			"&_journal_mode=WAL"+
+			"&_synchronous=NORMAL"+
+			"&_cache_size=-65536"+
+			"&_auto_vacuum=INCREMENTAL"+
+			"&_page_size=4096"+
 			"&_pragma=temp_store(MEMORY)"+
-			"&_pragma=cache_size(-65536)"+
-			"&_pragma=auto_vacuum(INCREMENTAL)"+
-			"&_pragma=journal_size_limit(67110000)"+
-			"&_pragma=page_size(4096)",
+			"&_pragma=journal_size_limit(67110000)",
 		path,
 	)
 	db, err := sql.Open("sqlite3", dsn)
@@ -35,8 +35,8 @@ func NewDB(path string) (*sql.DB, error) {
 	}
 
 	// connection pool — read-heavy: 64 коннектов для 8 ядер, WAL + mmap снимают блокировки
-	db.SetMaxOpenConns(64)
-	db.SetMaxIdleConns(64)
+	db.SetMaxOpenConns(4)
+	db.SetMaxIdleConns(4)
 	db.SetConnMaxLifetime(30 * time.Minute)
 	db.SetConnMaxIdleTime(15 * time.Minute)
 
