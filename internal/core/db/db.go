@@ -23,10 +23,8 @@ func NewDB(path string) (*sql.DB, error) {
 			"&_journal_mode=WAL"+
 			"&_synchronous=NORMAL"+
 			"&_cache_size=-65536"+
-			"&_auto_vacuum=INCREMENTAL"+
-			"&_page_size=4096"+
-			"&_pragma=temp_store(MEMORY)"+
-			"&_pragma=journal_size_limit(67110000)",
+			"&_auto_vacuum=FULL"+
+			"&_page_size=4096",
 		path,
 	)
 	db, err := sql.Open("sqlite3", dsn)
