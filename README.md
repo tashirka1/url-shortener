@@ -1,63 +1,63 @@
 # url-shortener
 
-Self-hosted сервис сокращения ссылок. Один бинарник, SQLite, без внешних зависимостей — работает офлайн на минимальном железе.
+Self-hosted URL shortener. A single binary, SQLite, no external dependencies — runs offline on minimal hardware.
 
-## Возможности
+## Features
 
-- Короткие ссылки (base62), редирект, счётчик кликов, QR-код
-- Поиск по FTS5, пагинация
-- Аутентификация (cookie-сессии, CSRF, rate-limit), API-токены `Bearer` для `/api/v1`
-- Server-rendered UI: `templ` + `htmx` + `PicoCSS` — без SPA
-- Health-check `/health`, готов к бэкапу через Litestream
+- Short links (base62), redirects, click counter, QR codes
+- FTS5 full-text search, pagination
+- Authentication (cookie sessions, CSRF, rate limiting), `Bearer` API tokens for `/api/v1`
+- Server-rendered UI: `templ` + `htmx` + `PicoCSS` — no SPA
+- Health check at `/health`, ready for Litestream backups
 
-## Стек
+## Stack
 
 Go 1.26 + Echo v4 · templ + htmx + PicoCSS · SQLite3 (`mattn/go-sqlite3`, `fts5`) + goose · Docker
 
-## Быстрый старт
+## Quick start
 
 ```bash
 cp env-example .env
-make dev          # разработка с hot-reload (air), :8000
+make dev          # development with hot-reload (air), :8000
 ```
 
 ```bash
-make up           # prod в Docker, :8001 -> :8000
-make down         # остановить
+make up           # prod in Docker, :8001 -> :8000
+make down         # stop
 ```
 
 ```bash
-# prod-бинарник
+# production binary
 sudo apt-get install -y build-essential libsqlite3-dev
 make build-bin    # -> bin/url-shortener
 ./bin/url-shortener
 ```
 
-Переменные окружения (`.env`):
+Environment variables (`.env`):
 
 ```
 SESSION_KEY=dev_key
 DB_NAME=./db/main.db
 ```
 
-## Команды
+## Commands
 
 ```bash
-make check      # fmt + vet/lint + тесты (запускай после каждого изменения)
-make lint       # только линтеры
+make check      # fmt + vet/lint + tests (run after every change)
+make lint       # linters only
 ```
 
-## Бенчмарки (RPS)
+## Benchmarks (RPS)
 
-Эндпоинты для нагрузочного тестирования — `internal/rps`.
+Load-testing endpoints — `internal/rps`.
 
-Подготовка данных для SELECT/UPDATE:
+Prefill data for SELECT/UPDATE:
 
 ```bash
 for i in $(seq 1 1000); do curl -s "http://localhost:8000/rps/templ-page-insert?payload=prefill" > /dev/null; done
 ```
 
-Запуск (`wrk`):
+Run (`wrk`):
 
 ```bash
 wrk -t10 -c100 -d5s http://localhost:8000/rps/simple-text
@@ -69,11 +69,11 @@ wrk -t10 -c100 -d5s 'http://localhost:8000/rps/templ-page-update'
 wrk -t10 -c100 -d5s 'http://localhost:8000/rps/templ-page-select-simple?limit=15'
 ```
 
-## Документация
+## Documentation
 
-- [Туториал](docs/tutorial)
-- Архитектура и правила: [AGENTS.md](AGENTS.md)
+- [Tutorial](docs/tutorial)
+- Architecture and rules: [AGENTS.md](AGENTS.md)
 
-## Лицензия
+## License
 
-MIT — см. [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE).
